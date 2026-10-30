@@ -1,0 +1,6 @@
+{
+  "name": "The Daily Bugle - Spider-Man News & Scoop Archive",
+  "description": "The official digital press of New York's hardest-hitting daily newspaper. Read Spider-Man scoops, J. Jonah Jameson editorials, crime reports, and save stories for offline reading.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
