@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+@custom-variant sepia (&:where(.sepia, .sepia *));
 
 @layer utilities {
   .font-headline {
@@ -14,6 +15,71 @@
   .font-body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
+}
+
+/* Continuous Breaking News Ticker Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Classic Vintage Sepia / Newsprint Styling */
+html.sepia body {
+  background-color: #f4ecdc !important;
+  color: #261f17 !important;
+}
+
+html.sepia .bg-\[\#fcfaf7\] {
+  background-color: #f4ecdc !important;
+}
+
+html.sepia .bg-\[\#faf8f4\],
+html.sepia .bg-\[\#f5f1ea\] {
+  background-color: #ebe2ce !important;
+}
+
+html.sepia .bg-white {
+  background-color: #f7f1e4 !important;
+}
+
+html.sepia .border-\[\#e7e2d9\],
+html.sepia .border-\[\#e5dfd5\],
+html.sepia .border-\[\#ece7de\],
+html.sepia .border-\[\#d6cfc2\],
+html.sepia .border-\[\#e2dcce\] {
+  border-color: #d8cbb3 !important;
+}
+
+html.sepia .text-\[\#1c1917\] {
+  color: #241c13 !important;
+}
+
+html.sepia .text-\[\#57534e\],
+html.sepia .text-\[\#44403c\] {
+  color: #5c4e3e !important;
+}
+
+html.sepia .text-\[\#78716c\] {
+  color: #7d6b56 !important;
+}
+
+html.sepia .bg-\[\#ede8df\] {
+  background-color: #dfd4be !important;
 }
 
 /* Print styling for Daily Bugle broadsheet simulation */

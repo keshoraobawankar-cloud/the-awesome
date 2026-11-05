@@ -266,5 +266,7 @@ export const CATEGORIES = [
   'Crime & Justice',
   'City Beat',
   'Investigation',
-  'Tech & Science'
+  'Tech & Science',
+  'Entertainment Desk',
+  'Books & News'
 ] as const;

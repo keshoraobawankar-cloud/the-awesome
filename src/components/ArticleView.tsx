@@ -8,12 +8,14 @@ import {
   User,
   Quote,
   Check,
-  Type
+  Type,
+  MessageSquare
 } from 'lucide-react';
 import { Story, STORIES } from '../data/stories';
 import { useBugle } from '../context/BugleContext';
 import { StoryImage } from './StoryImage';
 import { StoryCard } from './StoryCard';
+import { CommentsSection } from './CommentsSection';
 
 interface ArticleViewProps {
   storyId: string;
@@ -260,6 +262,9 @@ export const ArticleView: React.FC<ArticleViewProps> = ({ storyId }) => {
           <span>{saved ? 'Saved in Archive' : 'Save for Later'}</span>
         </button>
       </div>
+
+      {/* Reader Reactions & Comments Section */}
+      <CommentsSection storyId={story.id} />
 
       {/* More Stories From The Daily Bugle */}
       <div className="no-print mt-16 pt-10 border-t-2 border-[#1c1917] dark:border-[#262629]">

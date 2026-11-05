@@ -3,7 +3,7 @@ import { Shield, Award, Users, Camera, Mail, ArrowLeft } from 'lucide-react';
 import { useBugle } from '../context/BugleContext';
 
 export const AboutView: React.FC = () => {
-  const { navigateTo } = useBugle();
+  const { navigateTo, setIsBountyModalOpen, setIsJJJRantOpen } = useBugle();
 
   const mastheadStaff = [
     {
@@ -107,9 +107,26 @@ export const AboutView: React.FC = () => {
         <p className="font-editorial text-sm sm:text-base text-red-100 leading-relaxed mb-4">
           Are you a photographer, bystander, or freelancer with high-resolution photo or video evidence of Spider-Man in action? Deliver negatives or memory cards to the 4th Floor Darkroom. Top dollar paid on the spot for front-facing, unmasked shots!
         </p>
-        <div className="flex flex-wrap items-center gap-4 text-xs font-sans font-bold">
-          <span className="bg-white/20 px-3 py-1.5 rounded">Deliver to: 39th St. & 2nd Ave</span>
-          <span className="bg-white/20 px-3 py-1.5 rounded">Attn: J. Jonah Jameson</span>
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+          <div className="flex flex-wrap items-center gap-3 text-xs font-sans font-bold">
+            <span className="bg-white/20 px-3 py-1.5 rounded">Deliver to: 39th St. & 2nd Ave</span>
+            <span className="bg-white/20 px-3 py-1.5 rounded">Attn: J. Jonah Jameson</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsJJJRantOpen(true)}
+              className="px-4 py-2 bg-black/40 hover:bg-black/60 text-white rounded text-xs font-sans font-bold uppercase tracking-wider transition-colors"
+            >
+              Hear Jameson's Demand
+            </button>
+            <button
+              onClick={() => setIsBountyModalOpen(true)}
+              className="px-5 py-2 bg-white text-red-700 hover:bg-red-50 rounded text-xs font-sans font-bold uppercase tracking-wider transition-colors shadow-md"
+            >
+              Claim $10,000 Bounty Now →
+            </button>
+          </div>
         </div>
       </div>
     </div>

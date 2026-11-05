@@ -3,7 +3,7 @@ import { Newspaper, Heart } from 'lucide-react';
 import { useBugle } from '../context/BugleContext';
 
 export const Footer: React.FC = () => {
-  const { navigateTo, setSelectedCategory } = useBugle();
+  const { navigateTo, setSelectedCategory, setIsBountyModalOpen, setIsJJJRantOpen, triggerWebShooter } = useBugle();
 
   return (
     <footer className="no-print mt-20 border-t-2 border-[#1c1917] dark:border-[#262629] bg-[#f5f1ea] dark:bg-[#141417] text-[#57534e] dark:text-[#a8a29e] transition-colors duration-200">
@@ -88,6 +88,14 @@ export const Footer: React.FC = () => {
                   Tech & Science
                 </button>
               </li>
+              <li>
+                <button
+                  onClick={() => navigateTo('radar')}
+                  className="hover:text-red-700 dark:hover:text-red-400 font-bold transition-colors text-red-700 dark:text-red-400"
+                >
+                  Pop Culture & Book Radar
+                </button>
+              </li>
             </ul>
           </div>
 
@@ -125,7 +133,29 @@ export const Footer: React.FC = () => {
                 </button>
               </li>
               <li>
-                <span className="text-[#a8a29e]">Classifieds & Bounties ($10,000)</span>
+                <button
+                  onClick={() => setIsBountyModalOpen(true)}
+                  className="text-red-700 dark:text-red-400 font-bold hover:underline transition-colors"
+                >
+                  Bugle Photo Bounty ($10,000)
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setIsJJJRantOpen(true)}
+                  className="hover:text-red-700 dark:hover:text-red-400 transition-colors"
+                >
+                  JJJ Angry Rant Hotline
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={triggerWebShooter}
+                  className="hover:text-red-700 dark:hover:text-red-400 transition-colors inline-flex items-center gap-1"
+                  title="Easter Egg: Press 'W' anytime or click here"
+                >
+                  <span>🕷️ Vigilante Web Mode</span>
+                </button>
               </li>
             </ul>
           </div>
