@@ -297,6 +297,139 @@ export const ENTERTAINMENT_RELEASES: ReleaseItem[] = [
       '“This is a Raymond Chandler detective story that happens to have a spider bite,” remarked an executive producer. “Expect trench coats soaked in rain, Thompson submachine guns, and an older, world-weary private eye who hates Nazi sympathizers as much as he hates bad coffee.”'
     ],
     themeColor: 'from-stone-800 to-neutral-950'
+  },
+  {
+    id: 'rel-midtown-nights',
+    title: 'Midtown Nights',
+    category: 'Movies',
+    platform: 'Nationwide Theaters & IMAX',
+    releaseDate: '2026-11-08',
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    status: 'Confirmed',
+    description: 'A gritty neo-noir crime thriller following three seasoned NYPD detectives pursuing a syndicate heist crew across Lower Manhattan.',
+    creatorOrAuthor: 'Marcus Vance / Metro Pictures',
+    format: 'Feature Film (132 Mins)',
+    excerptTitle: 'Production Notes: Street Filming Under Rain Towers',
+    excerptParagraphs: [
+      'Principal photography took place on location across Chinatown, the Financial District, and the waterfront piers of Brooklyn.',
+      'Director Marcus Vance shot with custom anamorphic lenses and genuine rain rigs rather than digital post-production weather effects.',
+      'Early test screenings reported a visceral 1970s pacing reminiscent of The French Connection and Serpico.'
+    ],
+    themeColor: 'from-blue-900 to-stone-900'
+  },
+  {
+    id: 'rel-skyline-runners-2',
+    title: 'Skyline Runners 2',
+    category: 'Gaming',
+    platform: 'PC, PlayStation 5, Xbox Series X|S',
+    releaseDate: '2026-11-10',
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    status: 'Confirmed',
+    description: 'The anticipated parkour action sequel featuring seamless rooftop traversal, dynamic weather, and co-op underground district raids.',
+    creatorOrAuthor: 'Apex Interactive',
+    format: 'Action Adventure',
+    excerptTitle: 'Lead Designer Dispatch: Rebuilding Traversal Physics',
+    excerptParagraphs: [
+      'In Skyline Runners 2, inertia and momentum are governed by authentic momentum mechanics. Every ledge grab, wall-run, and zip-line transfer feels responsive.',
+      'The procedural rooftop generation engine renders over 14 square miles of dense vertical architecture without a single loading screen.',
+      'Pre-orders grant access to the vintage Daily Bugle shutterbug courier skin.'
+    ],
+    themeColor: 'from-amber-600 to-stone-900'
+  },
+  {
+    id: 'rel-web-of-lanterns',
+    title: 'Web of Lanterns (Season 2)',
+    category: 'Anime',
+    platform: 'Crunchyroll Worldwide Simulcast',
+    releaseDate: '2026-11-13',
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    status: 'Confirmed',
+    description: 'Season 2 dives into the Spirit Guild Tournament as ancient seal spirits breach the capital city gates in a dazzling visual showcase.',
+    creatorOrAuthor: 'Studio Silver / Aniplex',
+    format: '12-Episode Anime Series',
+    excerptTitle: 'Director Studio Interview: The 6-Minute Uncut Climax',
+    excerptParagraphs: [
+      'Episode 1 opens with an ambitious six-minute continuous action sequence animated by over thirty key animators across Tokyo and Seoul.',
+      'The musical score features traditional shamisen and koto orchestration interwoven with modern synthetic breakbeats.',
+      'Fans can expect answers regarding the celestial guardian seal left behind in the season 1 cliffhanger.'
+    ],
+    themeColor: 'from-red-600 to-indigo-950'
+  },
+  {
+    id: 'rel-the-last-edition',
+    title: 'The Last Edition',
+    category: 'TV Dramas',
+    platform: 'Netflix Worldwide Streaming',
+    releaseDate: '2026-11-16',
+    image: '/src/assets/images/jj_jameson_editorial_1793361604257.jpg',
+    status: 'Coming Soon',
+    description: 'A gripping newsroom period drama following an investigative broadsheet uncovering municipal corruption during the 1982 transit strike.',
+    creatorOrAuthor: 'Showrunner David Simon',
+    format: '8-Episode Prestige Drama',
+    excerptTitle: 'Series Overview: Ink Stains and Telephones',
+    excerptParagraphs: [
+      'Created by Emmy-winning showrunners, The Last Edition explores the relentless ethical compromises of investigative reporting in the pre-internet era.',
+      'The series stars veteran character actors portraying rival desk editors fighting for front-page real estate before the midnight press run.',
+      'Network reps noted the premiere date is subject to final ADR sound mixing approvals.'
+    ],
+    themeColor: 'from-stone-700 to-zinc-950'
+  },
+  {
+    id: 'rel-rooftop-chronicles',
+    title: 'Rooftop Chronicles, Vol. 7',
+    category: 'Books & Novels',
+    platform: 'Paperback, Kindle Ebook & Audible',
+    releaseDate: '2026-11-21',
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    status: 'Confirmed',
+    description: 'The bestselling urban fantasy novel reaches its penultimate conflict as the Gargoyle Watcher guild breaks its three-century truce.',
+    creatorOrAuthor: 'K. R. Sterling',
+    format: '496 Pages · Fantasy Novel',
+    excerptTitle: 'Chapter 1: Rain on Bronze Wings',
+    excerptParagraphs: [
+      'The bronze wings of the cathedral gargoyle were slick with November sleet when Aaron heard the distinct click of an antique crossbow bolt.',
+      'For three hundred years, the rooftop guardians had sworn never to interfere with mortal affairs below 14th Street. But tonight, blood on the cobblestones changed everything.',
+      'He reached for the talisman tucked inside his trench coat collar. The brass was burning hot against his skin.'
+    ],
+    themeColor: 'from-emerald-700 to-slate-950'
+  },
+  {
+    id: 'rel-harbor-lights',
+    title: 'Harbor Lights',
+    category: 'Movies',
+    platform: 'Theatrical Worldwide (Moved from Nov 20)',
+    releaseDate: '2026-11-29',
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    status: 'Delayed',
+    description: 'Post-production maritime VFX polish moved this sea survival drama into late November for optimal holiday screenings.',
+    creatorOrAuthor: 'Elena Ruiz / Metro Pictures',
+    format: 'Survival Drama Feature',
+    excerptTitle: 'Studio Statement Regarding Release Shift',
+    excerptParagraphs: [
+      'Producers confirmed that the two-week delay was requested directly by the VFX supervisor to ensure historical fidelity in the North Atlantic storm sequence.',
+      'The film features an unbroken twenty-minute scene depicting the distress rescue of a commercial fishing vessel during a Category 4 nor’easter.',
+      'Advance press screenings will begin in New York and Los Angeles ahead of the revised premiere date.'
+    ],
+    themeColor: 'from-cyan-900 to-stone-900'
+  },
+  {
+    id: 'rel-iron-alley',
+    title: 'Iron Alley',
+    category: 'Gaming',
+    platform: 'Steam Early Access & GOG (PC)',
+    releaseDate: '2026-12-08',
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    status: 'Coming Soon',
+    description: 'An isometric tactical cyberpunk shooter with destructible environments, modular cybernetic weaponry, and squad combat.',
+    creatorOrAuthor: 'Sublevel Games',
+    format: 'Tactical Cyberpunk Shooter',
+    excerptTitle: 'Developer Diary: Grid-Free Tactical Cover',
+    excerptParagraphs: [
+      'Iron Alley ditches conventional tile grids in favor of continuous geometric line-of-sight and true ballistic penetration.',
+      'Concrete pillars crack and crumble under heavy machine-gun fire, forcing players to dynamically reposition their fireteams.',
+      'Beta testing has expanded to 10,000 community participants this week.'
+    ],
+    themeColor: 'from-orange-700 to-stone-950'
   }
 ];
 

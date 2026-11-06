@@ -95,173 +95,185 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Top Bar Contract (§2) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex items-center justify-between gap-8">
-        {/* Zone 1: Single text element wordmark (Click 3x for Vigilante Easter Egg!) */}
-        <button
-          onClick={handleLogoClick}
-          title="Click 3 times to trigger Spider-Man Web-Shooter Easter Egg!"
-          className="flex items-center gap-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 rounded select-none relative"
-        >
-          <div className="bg-red-700 text-white font-headline text-2xl font-bold px-2 py-0.5 tracking-tighter shrink-0 uppercase rounded-sm group-hover:scale-105 transition-transform">
-            THE
-          </div>
-          <div className="flex flex-col">
-            <span className="text-2xl sm:text-3xl font-headline font-bold tracking-tight text-[#1c1917] dark:text-white uppercase whitespace-nowrap shrink-0 group-hover:text-red-700 dark:group-hover:text-red-500 transition-colors">
+      {/* Top Bar / Masthead */}
+      <div className="max-w-[1180px] mx-auto px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+        {/* Zone 1: Brand Wordmark with Subtitle Date (Click 3x for Vigilante Easter Egg!) */}
+        <div>
+          <button
+            onClick={handleLogoClick}
+            title="Click 3 times to trigger Spider-Man Web-Shooter Easter Egg!"
+            className="flex items-center gap-2.5 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 rounded select-none relative"
+          >
+            <span className="bg-[#c8102e] text-white font-anton text-2xl sm:text-3xl px-2 py-0.5 uppercase tracking-tighter shrink-0 rounded-xs group-hover:scale-105 transition-transform">
+              THE
+            </span>
+            <span className="text-3xl sm:text-4xl font-anton font-normal tracking-tight text-[#12142a] dark:text-[#f4f2ea] uppercase whitespace-nowrap shrink-0 group-hover:text-[#c8102e] dark:group-hover:text-[#ff3b52] transition-colors">
               DAILY BUGLE
             </span>
+
+            {/* Discreet click indicator prompt */}
+            {logoClickCount > 0 && (
+              <span className="absolute -bottom-4 left-0 text-[10px] font-ui font-bold text-red-600 dark:text-red-400 whitespace-nowrap animate-bounce">
+                🕸️ Click {3 - logoClickCount} more time{3 - logoClickCount > 1 ? 's' : ''}...
+              </span>
+            )}
+          </button>
+          <div className="text-xs sm:text-sm font-ui font-medium text-[#555a75] dark:text-[#a3a8c4] mt-0.5">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
+        </div>
 
-          {/* Discreet click indicator prompt */}
-          {logoClickCount > 0 && (
-            <span className="absolute -bottom-4 left-0 text-[10px] font-sans font-bold text-red-600 dark:text-red-400 whitespace-nowrap animate-bounce">
-              🕸️ Click {3 - logoClickCount} more time{3 - logoClickCount > 1 ? 's' : ''}...
-            </span>
-          )}
-        </button>
+        {/* Zone 3: Tools - Theme Switch & Saved Count Badge */}
+        <div className="flex items-center gap-2.5 font-ui font-bold text-sm shrink-0">
+          {/* Quick Jameson Hotline launcher */}
+          <button
+            onClick={() => setIsJJJRantOpen(true)}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-ui font-bold text-[#c8102e] dark:text-[#ff3b52] hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors"
+            title="Hear an angry editorial rant from J. Jonah Jameson"
+          >
+            <Mic className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+            <span>JJJ Desk</span>
+          </button>
 
-        {/* Zone 2: 4-5 single-line clean text nav links */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-sans font-medium text-[#57534e] dark:text-[#d6d3d1]">
+          {/* Theme Switcher Button */}
           <button
-            onClick={() => {
-              setSelectedCategory('All');
-              navigateTo('home');
-            }}
-            className={`transition-colors whitespace-nowrap shrink-0 hover:text-red-700 dark:hover:text-red-400 pb-0.5 ${
-              activePage === 'home'
-                ? 'text-[#1c1917] dark:text-white font-bold border-b-2 border-red-700'
-                : ''
-            }`}
+            onClick={cycleTheme}
+            aria-label="Switch light, sepia, or dark theme"
+            className="border-2 border-[#12142a] dark:border-[#f4f2ea] bg-transparent text-[#12142a] dark:text-[#f4f2ea] hover:bg-black/5 dark:hover:bg-white/10 px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
           >
-            Front Page
+            {theme === 'dark' ? (
+              <>
+                <Sun className="w-3.5 h-3.5 text-amber-300" />
+                <span>Light mode</span>
+              </>
+            ) : theme === 'sepia' ? (
+              <>
+                <Scroll className="w-3.5 h-3.5 text-amber-700" />
+                <span>Dark mode</span>
+              </>
+            ) : (
+              <>
+                <Moon className="w-3.5 h-3.5" />
+                <span>Dark mode</span>
+              </>
+            )}
           </button>
-          <button
-            onClick={() => {
-              setSelectedCategory('Opinion');
-              navigateTo('home');
-            }}
-            className="transition-colors whitespace-nowrap shrink-0 hover:text-red-700 dark:hover:text-red-400 pb-0.5"
-          >
-            Jameson's Desk
-          </button>
-          <button
-            onClick={() => {
-              setSelectedCategory('Crime & Justice');
-              navigateTo('home');
-            }}
-            className="transition-colors whitespace-nowrap shrink-0 hover:text-red-700 dark:hover:text-red-400 pb-0.5"
-          >
-            Crime Blotter
-          </button>
-          <button
-            onClick={() => navigateTo('radar')}
-            className={`transition-colors whitespace-nowrap shrink-0 hover:text-red-700 dark:hover:text-red-400 pb-0.5 flex items-center gap-1.5 ${
-              activePage === 'radar'
-                ? 'text-[#1c1917] dark:text-white font-bold border-b-2 border-red-700'
-                : 'text-red-700 dark:text-red-400 font-bold'
-            }`}
-          >
-            <span>Release Radar</span>
-            <span className="px-1.5 py-0.2 bg-red-100 dark:bg-red-950/60 rounded text-[10px] uppercase tracking-wider font-mono">
-              DROPS
-            </span>
-          </button>
-          <button
-            onClick={() => setIsBountyModalOpen(true)}
-            className="transition-colors whitespace-nowrap shrink-0 text-[#57534e] dark:text-[#a8a29e] hover:text-red-700 dark:hover:text-red-400 pb-0.5 flex items-center gap-1"
-          >
-            <Camera className="w-3.5 h-3.5 text-red-700 dark:text-red-400" />
-            <span>Bounty Desk</span>
-          </button>
-          <button
-            onClick={() => navigateTo('about')}
-            className={`transition-colors whitespace-nowrap shrink-0 hover:text-red-700 dark:hover:text-red-400 pb-0.5 ${
-              activePage === 'about'
-                ? 'text-[#1c1917] dark:text-white font-bold border-b-2 border-red-700'
-                : ''
-            }`}
-          >
-            About The Bugle
-          </button>
-        </nav>
 
-        {/* Zone 3: 3-Way Theme Switcher (Light / Vintage Sepia / Dark) + Saved Stories Drawer Button */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          {/* Theme Selector: Light / Vintage Sepia / Dark Mode */}
-          <div className="flex items-center gap-0.5 bg-[#ede8df] dark:bg-[#1f1f23] rounded p-1 text-xs">
-            <button
-              onClick={() => setTheme('light')}
-              aria-label="Modern Broadsheet Light Mode"
-              title="Modern Broadsheet (Light)"
-              className={`p-1.5 rounded transition-colors ${
-                theme === 'light'
-                  ? 'bg-white text-stone-900 shadow-xs'
-                  : 'text-[#78716c] dark:text-[#a8a29e] hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Sun className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setTheme('sepia')}
-              aria-label="Vintage Newsprint Sepia Mode"
-              title="Vintage Newsprint (1960s Sepia)"
-              className={`p-1.5 rounded transition-colors ${
-                theme === 'sepia'
-                  ? 'bg-[#dfd4be] text-[#3d2b15] shadow-xs font-bold'
-                  : 'text-[#78716c] dark:text-[#a8a29e] hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Scroll className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setTheme('dark')}
-              aria-label="Midnight Edition Dark Mode"
-              title="Midnight Press (Dark)"
-              className={`p-1.5 rounded transition-colors ${
-                theme === 'dark'
-                  ? 'bg-[#2d2d34] text-amber-300 shadow-xs'
-                  : 'text-[#78716c] dark:text-[#a8a29e] hover:text-stone-900 dark:hover:text-white'
-              }`}
-            >
-              <Moon className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Saved Stories & Releases Manager Button (Opens Slide-over Drawer) */}
+          {/* Saved Bookmarks Button */}
           <button
             onClick={() => setIsSavedDrawerOpen(true)}
-            aria-label="Open Saved Dossier"
-            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold rounded bg-red-700 text-white hover:bg-red-800 transition-colors whitespace-nowrap shrink-0 shadow-xs"
-            title="Open Bookmarked Stories & Releases Drawer"
+            aria-label="Open Saved Items"
+            className="border-2 border-[#12142a] dark:border-[#f4f2ea] bg-[#12142a] dark:bg-[#f4f2ea] text-[#fcfaf7] dark:text-[#12142a] px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-transform active:scale-95 flex items-center gap-1 cursor-pointer shadow-xs"
           >
             <Bookmark className="w-3.5 h-3.5 fill-current" />
-            <span className="hidden sm:inline">Bookmarks</span>
-            <span className="px-1.5 py-0.2 bg-black/25 text-white rounded text-[11px] font-bold tabular-nums">
+            <span>Saved</span>
+            <span className="inline-block min-w-[20px] text-center bg-[#c8102e] text-white rounded-full text-[11px] font-bold px-1.5 py-0.2 ml-1 tabular-nums">
               {savedStoryIds.length + watchlistIds.length}
             </span>
           </button>
         </div>
       </div>
 
-      {/* Breaking News Ticker Animation: Continuous Smooth Marquee */}
-      <div className="border-t border-[#e7e2d9] dark:border-[#262629] bg-[#f5f1ea] dark:bg-[#18181c] py-2 px-4 sm:px-8 overflow-hidden group">
-        <div className="max-w-7xl mx-auto flex items-center gap-3 overflow-hidden">
-          {/* Pinned Flash Bulletin Kicker */}
-          <div className="flex items-center gap-1.5 text-xs font-bold text-red-700 dark:text-red-500 uppercase tracking-wider shrink-0 bg-red-100 dark:bg-red-950/60 px-2.5 py-0.5 rounded shadow-xs z-10">
-            <Flame className="w-3.5 h-3.5 text-red-600 animate-pulse" />
-            <span>FLASH BULLETIN:</span>
-          </div>
+      {/* Main Section Navigation Bar (Matches Reference nav.main) */}
+      <nav
+        className="border-t-3 border-[#12142a] dark:border-[#2b3052] border-b border-[#cfd3e0] dark:border-[#2b3052] bg-white/40 dark:bg-[#151726]/40"
+        aria-label="Sections"
+      >
+        <div className="max-w-[1180px] mx-auto px-5 py-2.5 flex items-center gap-6 overflow-x-auto no-scrollbar font-ui font-bold text-sm sm:text-base">
+          <button
+            onClick={() => navigateTo('radar')}
+            aria-current={activePage === 'radar' ? 'page' : undefined}
+            className={`pb-1 border-b-3 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activePage === 'radar'
+                ? 'border-[#c8102e] text-[#c8102e] dark:text-[#ff3b52]'
+                : 'border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e]'
+            }`}
+          >
+            Release Radar
+          </button>
 
-          {/* Smooth Continuous Marquee Banner */}
-          <div className="overflow-hidden flex-1 relative">
-            <div className="animate-marquee whitespace-nowrap text-xs font-sans text-[#44403c] dark:text-[#d6d3d1]">
-              <span className="inline-block pr-12">
-                🚨 Spider-Man sighted swinging near Queensboro Bridge overpass · ⚡ Oscorp Industries denies unauthorized bio-glider test flights · 💰 J. Jonah Jameson offers $10,000 cash for clear unmasked photos · 🏦 Bank vault heist suspects held at 14th Precinct · 🚇 Subway service fully restored on Broadway line after high-tensile webbing cleared · 📰 Daily Bugle Afternoon Edition hits newsstands at 2:00 PM
+          <button
+            onClick={() => {
+              setSelectedCategory('All');
+              navigateTo('home');
+            }}
+            aria-current={activePage === 'home' ? 'page' : undefined}
+            className={`pb-1 border-b-3 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activePage === 'home'
+                ? 'border-[#c8102e] text-[#c8102e] dark:text-[#ff3b52]'
+                : 'border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e]'
+            }`}
+          >
+            Front page
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedCategory('Crime & Justice');
+              navigateTo('home');
+            }}
+            className="pb-1 border-b-3 border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            Latest stories
+          </button>
+
+          <button
+            onClick={() => {
+              setSelectedCategory('Opinion');
+              navigateTo('home');
+            }}
+            className="pb-1 border-b-3 border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            Opinion
+          </button>
+
+          <button
+            onClick={() => setIsBountyModalOpen(true)}
+            className="pb-1 border-b-3 border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Camera className="w-3.5 h-3.5 text-[#c8102e]" />
+            <span>$10,000 Bounty</span>
+          </button>
+
+          <button
+            onClick={() => navigateTo('about')}
+            aria-current={activePage === 'about' ? 'page' : undefined}
+            className={`pb-1 border-b-3 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activePage === 'about'
+                ? 'border-[#c8102e] text-[#c8102e] dark:text-[#ff3b52]'
+                : 'border-transparent text-[#12142a] dark:text-[#f4f2ea] hover:text-[#c8102e]'
+            }`}
+          >
+            About The Bugle
+          </button>
+        </div>
+      </nav>
+
+      {/* Reference Flash Bulletins Ticker Bar */}
+      <div className="bg-[#12142a] text-[#fcfaf7] dark:bg-[#0e1020] dark:text-[#f4f2ea] text-xs sm:text-sm font-ui flex items-center overflow-hidden border-b border-black/20" role="marquee" aria-label="Flash bulletins">
+        <div className="bg-[#ffcf2e] text-[#12142a] font-black text-xs sm:text-sm px-4 py-2 shrink-0 z-10 uppercase tracking-widest flex items-center gap-1 shadow-sm">
+          <span>FLASH</span>
+        </div>
+        <div className="overflow-hidden flex-1 relative py-2">
+          <div className="animate-marquee whitespace-nowrap text-xs sm:text-sm font-medium tracking-wide flex items-center gap-12">
+            {[
+              'Release Desk confirms five drops this week',
+              'Harbor Lights slips by three weeks',
+              'Winter anime lineup is now final',
+              'Skyline Runners 2 pre-orders are open',
+              'Spider-Man sighted swinging near Queensboro Bridge overpass',
+              'Oscorp Industries denies unauthorized bio-glider test flights',
+              'J. Jonah Jameson offers $10,000 cash for clear unmasked photos',
+              'Release Desk confirms five drops this week',
+              'Harbor Lights slips by three weeks',
+              'Winter anime lineup is now final',
+              'Skyline Runners 2 pre-orders are open'
+            ].map((f, i) => (
+              <span key={i} className="inline-flex items-center gap-2">
+                <span>{f}</span>
+                <span aria-hidden="true" className="text-[#ffcf2e]/60">·</span>
               </span>
-              <span className="inline-block pr-12" aria-hidden="true">
-                🚨 Spider-Man sighted swinging near Queensboro Bridge overpass · ⚡ Oscorp Industries denies unauthorized bio-glider test flights · 💰 J. Jonah Jameson offers $10,000 cash for clear unmasked photos · 🏦 Bank vault heist suspects held at 14th Precinct · 🚇 Subway service fully restored on Broadway line after high-tensile webbing cleared · 📰 Daily Bugle Afternoon Edition hits newsstands at 2:00 PM
-              </span>
-            </div>
+            ))}
           </div>
         </div>
       </div>

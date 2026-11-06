@@ -3,18 +3,82 @@
 @custom-variant sepia (&:where(.sepia, .sepia *));
 
 @layer utilities {
+  .font-bebas {
+    font-family: 'Bebas Neue', 'Anton', sans-serif;
+  }
+  .font-inter {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .font-anton {
+    font-family: 'Anton', 'Oswald', 'Impact', sans-serif;
+  }
+  .font-ui {
+    font-family: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+  .font-tx {
+    font-family: 'Source Serif 4', Georgia, serif;
+  }
   .font-headline {
-    font-family: 'Oswald', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Anton', 'Oswald', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
   .font-serif-display {
     font-family: 'Playfair Display', Georgia, Cambria, "Times New Roman", Times, serif;
   }
   .font-editorial {
-    font-family: 'Newsreader', Garamond, "Times New Roman", serif;
+    font-family: 'Source Serif 4', 'Newsreader', Garamond, "Times New Roman", serif;
   }
   .font-body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: 'Archivo', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
+  .text-glow-cyan {
+    text-shadow: 0 0 20px rgba(34, 211, 238, 0.7);
+  }
+  .text-glow-purple {
+    text-shadow: 0 0 20px rgba(139, 92, 246, 0.7);
+  }
+  .text-glow-red {
+    text-shadow: 0 0 20px rgba(255, 61, 113, 0.7);
+  }
+}
+
+/* Lenis Smooth Scroll Recommended Rules */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Custom Cinematic Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0d1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #252846;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8b5cf6;
+}
+
+/* Authentic Daily Bugle Comic Halftone Cover Pattern */
+.bg-bugle-halftone {
+  background: radial-gradient(circle at 78% 28%, #ffcf2e 0 11%, transparent 11.5%),
+              radial-gradient(#12142a 1.4px, transparent 1.6px) 0 0/12px 12px,
+              linear-gradient(120deg, #c8102e, #5a0a1a);
 }
 
 /* Continuous Breaking News Ticker Animation */
@@ -92,3 +156,44 @@ html.sepia .bg-\[\#ede8df\] {
     color: black !important;
   }
 }
+
+/* ================= 1. INTERACTIVE "BUGLE LENS" / HALFTONE VISION ================= */
+html.halftone-lens img {
+  filter: contrast(130%) saturate(145%) drop-shadow(1px 1px 0px #000);
+  image-rendering: auto;
+}
+
+html.halftone-lens .bg-white,
+html.halftone-lens .bg-\[\#fcfaf7\],
+html.halftone-lens .bg-\[\#faf8f4\] {
+  background-image: radial-gradient(rgba(18, 20, 42, 0.12) 1px, transparent 1px) !important;
+  background-size: 6px 6px !important;
+}
+
+/* ================= 2. VIGILANTE HEATMAP (SPIDER-SIGHT) ================= */
+html.spider-sight body {
+  background-color: #060814 !important;
+  color: #22d3ee !important;
+}
+
+html.spider-sight h1,
+html.spider-sight h2,
+html.spider-sight h3,
+html.spider-sight h4 {
+  color: #ffffff !important;
+  text-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+}
+
+html.spider-sight .radar-card,
+html.spider-sight aside#radar,
+html.spider-sight article {
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.25), inset 0 0 8px rgba(255, 61, 113, 0.15) !important;
+}
+
+html.spider-sight .text-\[\#c8102e\],
+html.spider-sight .text-red-700 {
+  color: #ff3d71 !important;
+  text-shadow: 0 0 8px rgba(255, 61, 113, 0.7);
+}
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bookmark, X, BookOpen, Trash2, ArrowRight, Newspaper, Search, Film, Calendar, Bell } from 'lucide-react';
 import { useBugle } from '../context/BugleContext';
 import { ENTERTAINMENT_RELEASES, ReleaseItem } from '../data/releases';
+import { RADAR_ITEMS } from '../data/radarReferenceData';
 import { StoryImage } from './StoryImage';
 import { CountdownClock } from './CountdownClock';
 import { ExcerptReaderModal } from './ExcerptReaderModal';
@@ -48,8 +49,33 @@ export const SavedStoriesDrawer: React.FC = () => {
     );
   });
 
-  // Saved Entertainment Releases & Books
-  const savedReleases = ENTERTAINMENT_RELEASES.filter((r) => watchlistIds.includes(r.id));
+  // Saved Entertainment Releases & Radar Drops
+  const allKnownReleases: ReleaseItem[] = [
+    ...ENTERTAINMENT_RELEASES,
+    ...RADAR_ITEMS.map((r) => ({
+      id: r.id,
+      title: r.name,
+      category: (r.category === 'Games'
+        ? 'Gaming'
+        : r.category === 'Dramas'
+        ? 'TV Dramas'
+        : r.category === 'Books'
+        ? 'Books & Novels'
+        : r.category) as any,
+      platform: r.where,
+      releaseDate: '2026-11-20',
+      image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+      status: (r.status === 'confirmed'
+        ? 'Confirmed'
+        : r.status === 'delayed'
+        ? 'Delayed'
+        : 'Coming Soon') as any,
+      description: r.description,
+      creatorOrAuthor: 'Daily Bugle Pop Culture Desk',
+      themeColor: r.themeColor
+    }))
+  ];
+  const savedReleases = allKnownReleases.filter((r) => watchlistIds.includes(r.id));
   const filteredSavedReleases = savedReleases.filter((r) => {
     if (!drawerSearch.trim()) return true;
     const q = drawerSearch.toLowerCase();

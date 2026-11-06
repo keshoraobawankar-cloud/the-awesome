@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Daily Bugle: Release Radar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Archivo:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eceef3;--panel:#ffffff;--ink:#12142a;--muted:#555a75;--line:#cfd3e0;
+  --red:#c8102e;--flash:#ffcf2e;--on-red:#ffffff;--ok:#16794a;--warn:#a85a00;--bad:#c8102e;
+  --hd:'Anton','Impact',sans-serif;--ui:'Archivo','Helvetica Neue',Arial,sans-serif;--tx:'Source Serif 4',Georgia,serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1020;--panel:#171a30;--ink:#f4f2ea;--muted:#a3a8c4;--line:#2b3052;--red:#ff3b52;--ok:#4ade98;--warn:#ffb347;--bad:#ff6b7d}}
+:root[data-theme="dark"]{--bg:#0e1020;--panel:#171a30;--ink:#f4f2ea;--muted:#a3a8c4;--line:#2b3052;--red:#ff3b52;--ok:#4ade98;--warn:#ffb347;--bad:#ff6b7d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 var(--tx)}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--flash);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ticker */
+.ticker{background:var(--ink);color:var(--bg);font:500 14px/1 var(--ui);display:flex;overflow:hidden}
+.ticker b{background:var(--flash);color:#12142a;padding:12px 16px;flex:none;z-index:1}
+.track{display:flex;gap:48px;padding:12px 0 12px 24px;white-space:nowrap;animation:scroll 55s linear infinite}
+.ticker:hover .track{animation-play-state:paused}
+@keyframes scroll{to{transform:translateX(-50%)}}
+
+/* masthead */
+.mast{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:22px 0 14px;flex-wrap:wrap}
+.logo{font:400 clamp(40px,7vw,76px)/.9 var(--hd);text-transform:uppercase;text-decoration:none;letter-spacing:.01em}
+.logo span{background:var(--red);color:var(--on-red);padding:0 .15em;margin-right:.1em}
+.tools{display:flex;gap:10px;align-items:center;font:500 14px var(--ui)}
+.btn{border:2px solid var(--ink);background:transparent;padding:9px 14px;border-radius:6px;font:700 14px var(--ui)}
+.btn[aria-pressed="true"],.btn.solid{background:var(--ink);color:var(--bg)}
+.count{display:inline-block;min-width:22px;text-align:center;background:var(--red);color:var(--on-red);border-radius:99px;padding:0 6px;margin-left:6px}
+.date{font:500 14px var(--ui);color:var(--muted)}
+nav.main{display:flex;gap:26px;border-top:3px solid var(--ink);border-bottom:1px solid var(--line);padding:12px 0;font:700 16px var(--ui);overflow-x:auto}
+nav.main a{text-decoration:none;white-space:nowrap;padding-bottom:2px;border-bottom:3px solid transparent}
+nav.main a[aria-current]{border-color:var(--red)}
+
+/* filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0 8px}
+.chip{border:1.5px solid var(--line);background:var(--panel);padding:8px 16px;border-radius:99px;font:700 14px var(--ui)}
+.chip[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:var(--on-red)}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:36px;align-items:start;margin-top:18px}
+@media(max-width:940px){.grid{grid-template-columns:1fr}}
+
+/* lead */
+.lead{border-bottom:1px solid var(--line);padding-bottom:30px}
+.kicker{font:700 14px var(--ui);color:var(--red)}
+.lead h1{font:400 clamp(38px,6vw,68px)/1.02 var(--hd);text-transform:uppercase;margin:8px 0 14px;max-width:16ch}
+.lead p.deck{font-size:21px;line-height:1.5;max-width:60ch;margin:0 0 16px}
+.by{font:500 14px var(--ui);color:var(--muted);display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cover{aspect-ratio:16/8;border-radius:10px;margin:18px 0;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 78% 28%,var(--flash) 0 11%,transparent 11.5%),
+  radial-gradient(var(--ink) 1.4px,transparent 1.6px) 0 0/12px 12px,linear-gradient(120deg,var(--red),#5a0a1a);color:#fff}
+.cover b{position:absolute;left:20px;bottom:16px;font:400 clamp(22px,4vw,40px)/1 var(--hd);text-transform:uppercase;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+
+/* stories */
+.stories{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:26px;margin-top:30px}
+.story{border-top:3px solid var(--ink);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.story h3{font:400 26px/1.1 var(--hd);text-transform:uppercase;margin:0}
+.story p{margin:0;font-size:16px;color:var(--muted)}
+.story .row{display:flex;justify-content:space-between;align-items:center;margin-top:auto;font:500 13px var(--ui);color:var(--muted)}
+.save{border:0;background:none;font:700 13px var(--ui);padding:6px 0;color:var(--ink)}
+.save[aria-pressed="true"]{color:var(--red)}
+.empty{grid-column:1/-1;color:var(--muted);font:500 15px var(--ui)}
+
+/* radar */
+.radar{background:var(--panel);border:2px solid var(--ink);border-radius:12px;padding:20px;position:sticky;top:16px}
+.radar h2{font:400 32px/1 var(--hd);text-transform:uppercase;margin:0}
+.radar .sub{font:500 14px var(--ui);color:var(--muted);margin:4px 0 14px}
+.item{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.item h4{margin:0;font:700 16px/1.25 var(--ui)}
+.meta{font:500 13px var(--ui);color:var(--muted)}
+.cd{grid-row:1/3;grid-column:2;text-align:right;font:400 30px/1 var(--hd);font-variant-numeric:tabular-nums}
+.cd small{display:block;font:500 12px var(--ui);color:var(--muted)}
+.cd.soon{color:var(--red)}
+.st{font-weight:700}.st.confirmed{color:var(--ok)}.st.tentative{color:var(--warn)}.st.delayed{color:var(--bad)}
+.item .save{grid-column:1;justify-self:start;padding:0}
+footer{margin:50px 0 30px;padding-top:16px;border-top:3px solid var(--ink);font:500 13px var(--ui);color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.track{animation:none}}
+</style>
+</head>
+<body>
+<div class="ticker" role="marquee" aria-label="Flash bulletins"><b>FLASH</b><div class="track" id="track"></div></div>
+
+<div class="wrap">
+  <header>
+    <div class="mast">
+      <div>
+        <a class="logo" href="#"><span>The</span>Daily Bugle</a>
+        <div class="date" id="today"></div>
+      </div>
+      <div class="tools">
+        <button class="btn" id="theme" aria-label="Switch light or dark theme">Dark mode</button>
+        <button class="btn solid" id="bmBtn">Saved<span class="count" id="bmCount">0</span></button>
+      </div>
+    </div>
+    <nav class="main" aria-label="Sections">
+      <a href="#" aria-current="page">Front page</a><a href="#radar">Release Radar</a><a href="#news">Latest stories</a><a href="#news">Opinion</a>
+    </nav>
+  </header>
+
+  <div class="filters" role="group" aria-label="Filter by category" id="filters"></div>
+
+  <main class="grid">
+    <section id="news" aria-label="News">
+      <article class="lead">
+        <div class="kicker">Front page · Exclusive</div>
+        <h1>Five releases drop this week. One just slipped.</h1>
+        <p class="deck">Our desk tracked every confirmed date across movies, anime, games and books, so you don’t have to refresh ten sites to find out what’s out and what’s delayed.</p>
+        <div class="cover" role="img" aria-label="Illustration of a flash of yellow light over red halftone"><b>This week’s big drops</b></div>
+        <div class="by"><span>By the Release Desk</span><span>5 min read</span><button class="btn" id="leadSave" aria-pressed="false">Save story</button></div>
+      </article>
+      <div class="stories" id="stories"></div>
+    </section>
+
+    <aside class="radar" id="radar" aria-label="Release Radar">
+      <h2>Release Radar</h2>
+      <p class="sub">Next drops, soonest first. Sample data.</p>
+      <div id="items"></div>
+    </aside>
+  </main>
+
+  <footer>Sample content for design preview. Dates and titles are placeholders; connect your real data source to go live.</footer>
+</div>
+
+<script>
+const cats=["All","Movies","Anime","Games","Dramas","Books"];
+const stories=[
+ {c:"Movies",t:"Trailer week: three sequels show their hand",d:"Release dates held steady, but one studio moved its premiere by a week.",m:3},
+ {c:"Anime",t:"Winter season lineup is locked",d:"Twelve new series confirmed, with simulcast platforms listed for each.",m:4},
+ {c:"Games",t:"Open-world sequel gets a firm launch date",d:"Pre-orders open today across consoles and PC.",m:2},
+ {c:"Dramas",t:"Fan-favorite drama returns for a second season",d:"Episodes will air weekly instead of dropping all at once.",m:3},
+ {c:"Books",t:"The novel behind the anime has a new volume",d:"English edition lands a month after the Japanese release.",m:2},
+ {c:"Movies",t:"Festival darling heads to streaming",d:"Platform confirms an exclusive window and a subtitle schedule.",m:3}
+];
+const radar=[
+ {c:"Movies",n:"Midtown Nights",d:1,s:"confirmed",w:"In theaters"},
+ {c:"Games",n:"Skyline Runners 2",d:3,s:"confirmed",w:"PC, PS5, Xbox"},
+ {c:"Anime",n:"Web of Lanterns, S2",d:6,s:"confirmed",w:"Crunchyroll"},
+ {c:"Dramas",n:"The Last Edition",d:9,s:"tentative",w:"Netflix"},
+ {c:"Books",n:"Rooftop Chronicles, Vol. 7",d:14,s:"confirmed",w:"Paperback and ebook"},
+ {c:"Movies",n:"Harbor Lights",d:22,s:"delayed",w:"Moved from Nov 20"},
+ {c:"Games",n:"Iron Alley",d:31,s:"tentative",w:"PC"}
+];
+const flash=["Release Desk confirms five drops this week","Harbor Lights slips by three weeks","Winter anime lineup is now final","Skyline Runners 2 pre-orders are open"];
+const saved=new Set();let cat="All";
+const $=id=>document.getElementById(id);
+$("track").innerHTML=[...flash,...flash].map(f=>`<span>${f}</span>`).join("");
+$("today").textContent=new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const stamp=Date.now();
+const targets=radar.map(r=>stamp+r.d*864e5);
+
+function renderFilters(){$("filters").innerHTML=cats.map(c=>`<button class="chip" aria-pressed="${c===cat}" data-c="${c}">${c}</button>`).join("")}
+function renderStories(){
+  const list=stories.filter(s=>cat==="All"||s.c===cat);
+  $("stories").innerHTML=list.length?list.map(s=>`<article class="story"><div class="kicker">${s.c}</div><h3>${s.t}</h3><p>${s.d}</p>
+   <div class="row"><span>${s.m} min read</span><button class="save" data-k="${s.t}" aria-pressed="${saved.has(s.t)}">${saved.has(s.t)?"Saved":"Save"}</button></div></article>`).join(""):
+   `<p class="empty">No stories in ${cat} yet. Try another category.</p>`;
+}
+function renderRadar(){
+  const list=radar.map((r,i)=>({...r,i})).filter(r=>cat==="All"||r.c===cat);
+  $("items").innerHTML=list.length?list.map(r=>`<div class="item"><h4>${r.n}</h4><div class="cd" data-i="${r.i}"></div>
+   <div class="meta">${r.c} · <span class="st ${r.s}">${r.s[0].toUpperCase()+r.s.slice(1)}</span> · ${r.w}</div>
+   <button class="save" data-k="${r.n}" aria-pressed="${saved.has(r.n)}">${saved.has(r.n)?"Saved":"Save"}</button></div>`).join(""):
+   `<p class="empty">Nothing on the radar for ${cat} right now.</p>`;
+  tick();
+}
+function tick(){
+  document.querySelectorAll(".cd").forEach(el=>{
+    const ms=Math.max(0,targets[el.dataset.i]-Date.now()),d=Math.floor(ms/864e5),h=Math.floor(ms/36e5)%24,m=Math.floor(ms/6e4)%60;
+    el.classList.toggle("soon",d<2);
+    el.innerHTML=d>0?`${d}d ${h}h<small>${m} min</small>`:`${h}h ${m}m<small>Today</small>`;
+  });
+}
+function renderAll(){renderFilters();renderStories();renderRadar()}
+function count(){$("bmCount").textContent=saved.size;$("leadSave").setAttribute("aria-pressed",saved.has("lead"));$("leadSave").textContent=saved.has("lead")?"Saved":"Save story"}
+document.addEventListener("click",e=>{
+  const c=e.target.closest(".chip");if(c){cat=c.dataset.c;renderAll();return}
+  const s=e.target.closest(".save");if(s){const k=s.dataset.k;saved.has(k)?saved.delete(k):saved.add(k);s.setAttribute("aria-pressed",saved.has(k));s.textContent=saved.has(k)?"Saved":"Save";count()}
+});
+$("leadSave").onclick=()=>{saved.has("lead")?saved.delete("lead"):saved.add("lead");count()};
+$("bmBtn").onclick=()=>alert(saved.size?"You have "+saved.size+" saved item(s).":"Nothing saved yet. Tap Save on any story or release.");
+$("theme").onclick=()=>{const r=document.documentElement,dark=(r.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"))==="dark";
+  r.dataset.theme=dark?"light":"dark";$("theme").textContent=dark?"Dark mode":"Light mode"};
+if(matchMedia("(prefers-color-scheme:dark)").matches)$("theme").textContent="Light mode";
+renderAll();setInterval(tick,30000);
+</script>
+</body>
+</html>

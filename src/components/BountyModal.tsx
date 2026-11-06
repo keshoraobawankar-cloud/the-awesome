@@ -106,6 +106,11 @@ export const BountyModal: React.FC = () => {
       ];
 
       const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+      const stampMap: Record<string, 'APPROVED ($10,000)' | 'REJECTED (TOO BLURRY)' | 'FAKE (OSCORP PROPAGANDA)' | 'LOWBALLED ($175)'> = {
+        approved: 'APPROVED ($10,000)',
+        lowballed: 'LOWBALLED ($175)',
+        rejected: 'REJECTED (TOO BLURRY)'
+      };
 
       const record = addBountySubmission({
         photographerName: photographerName || 'Peter Parker',
@@ -115,6 +120,7 @@ export const BountyModal: React.FC = () => {
         imageDataUrl: activeImageUrl,
         imageAlt: `${villainSubject} photographed at ${location}`,
         verdict: outcome.verdict,
+        stamp: stampMap[outcome.verdict] || 'APPROVED ($10,000)',
         payoutAmount: outcome.payoutAmount,
         jjjRemark: outcome.jjjRemark
       });
