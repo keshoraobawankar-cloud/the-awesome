@@ -17,6 +17,8 @@ import { DropFooter } from './DropFooter';
 import { SearchModal } from './SearchModal';
 import { DetailModal } from './DetailModal';
 import { WatchlistDrawer } from './WatchlistDrawer';
+import { LiveSyncModal } from './LiveSyncModal';
+import { UserUpdateModal } from './UserUpdateModal';
 import { Toast } from '../Toast';
 import { DropTitle } from '../../data/dropRadarData';
 import { playWhooshSound } from '../../utils/audio';
@@ -31,6 +33,9 @@ export const DropRadarApp: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
+  const [isLiveSyncOpen, setIsLiveSyncOpen] = useState(false);
+  const [isUserUpdateModalOpen, setIsUserUpdateModalOpen] = useState(false);
+  const [updateTarget, setUpdateTarget] = useState<{ id?: string; name?: string }>({});
   const [activeModalDrop, setActiveModalDrop] = useState<DropTitle | null>(null);
 
   // Initialize Lenis Smooth Scroll and connect to GSAP ScrollTrigger
@@ -105,6 +110,11 @@ export const DropRadarApp: React.FC = () => {
       <DropNavbar
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenWatchlist={() => setIsWatchlistOpen(true)}
+        onOpenLiveSync={() => setIsLiveSyncOpen(true)}
+        onOpenUserUpdates={() => {
+          setUpdateTarget({});
+          setIsUserUpdateModalOpen(true);
+        }}
         selectedCategory={selectedCategory}
         onSelectCategory={(cat) => setSelectedCategory(cat)}
         onScrollToSection={handleScrollToSection}
@@ -156,12 +166,28 @@ export const DropRadarApp: React.FC = () => {
       <DetailModal
         drop={activeModalDrop}
         onClose={() => setActiveModalDrop(null)}
+        onOpenUserUpdate={(id, name) => {
+          setUpdateTarget({ id, name });
+          setIsUserUpdateModalOpen(true);
+        }}
       />
 
       <WatchlistDrawer
         isOpen={isWatchlistOpen}
         onClose={() => setIsWatchlistOpen(false)}
         onSelectDrop={(drop) => setActiveModalDrop(drop)}
+      />
+
+      <LiveSyncModal
+        isOpen={isLiveSyncOpen}
+        onClose={() => setIsLiveSyncOpen(false)}
+      />
+
+      <UserUpdateModal
+        isOpen={isUserUpdateModalOpen}
+        onClose={() => setIsUserUpdateModalOpen(false)}
+        preselectedTitleId={updateTarget.id}
+        preselectedTitleName={updateTarget.name}
       />
 
       {/* Toast Notification Container */}

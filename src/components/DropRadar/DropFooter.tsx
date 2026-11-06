@@ -20,17 +20,17 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
                 </div>
               </div>
               <span className="font-bebas text-2xl text-white tracking-wider">
-                DROP<span className="text-[#22d3ee]">RADAR</span>
+                TICK<span className="text-[#22d3ee]">ORA</span>
               </span>
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              The scroll-driven cinematic tracker for the biggest upcoming drops across movies, anime, games, dramas, books, and manga.
+              The scroll-driven live tracker for the biggest upcoming drops across movies, anime, games, dramas, books, and manga.
             </p>
 
             <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>RADAR SYSTEM ONLINE</span>
+              <span>TICKORA SYSTEM ONLINE</span>
             </div>
           </div>
 
@@ -125,13 +125,18 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-[#252846]/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
-          <p>© 2026 DropRadar. Built with DropRadar cinematic scroll architecture.</p>
+        {/* Bottom Bar & Legal Attributions */}
+        <div className="pt-8 border-t border-[#252846]/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
+          <div className="space-y-1 text-center md:text-left">
+            <p>© 2026 Tickora. Built with live countdown telemetry.</p>
+            <p className="text-[11px] text-slate-500">
+              This product uses the TMDB API but is not endorsed or certified by TMDB. Anime & manga metadata powered by AniList GraphQL.
+            </p>
+          </div>
           <div className="flex items-center gap-4 text-slate-400">
             <span>Powered by GSAP + Lenis + Motion</span>
             <span>•</span>
-            <span className="text-cyan-400">0ms Latency</span>
+            <span className="text-cyan-400">Real-Time Sync Engine</span>
           </div>
         </div>
       </div>

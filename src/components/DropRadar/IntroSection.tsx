@@ -135,7 +135,7 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171a30]/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm font-inter font-semibold uppercase tracking-widest mb-6 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
           <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-          <span>Cinematic Release Tracker</span>
+          <span>TICKORA LIVE RELEASE RADAR</span>
         </div>
 
         <h1

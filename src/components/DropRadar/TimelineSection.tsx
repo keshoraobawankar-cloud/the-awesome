@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Calendar, Clock, Bell, Check, Film, Sparkles, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
 import { THIS_WEEK_TIMELINE, TimelineDrop, DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import confetti from 'canvas-confetti';
@@ -18,6 +19,8 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
   const cardRefs = useRef<HTMLDivElement[]>([]);
 
   const { isWatchlisted, toggleWatchlist } = useBugle();
+  const { drops } = useDropData();
+  const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -91,7 +94,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
   };
 
   const findMatchingDrop = (timelineItem: TimelineDrop): DropTitle => {
-    const found = DROP_TITLES_12.find(
+    const found = allDrops.find(
       (d) => d.name.toLowerCase().includes(timelineItem.title.toLowerCase().slice(0, 10))
     );
     return (

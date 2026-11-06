@@ -1,6 +1,6 @@
 {
-  "name": "The Daily Bugle - Spider-Man News & Scoop Archive",
-  "description": "The official digital press of New York's hardest-hitting daily newspaper. Read Spider-Man scoops, J. Jonah Jameson editorials, crime reports, and save stories for offline reading.",
+  "name": "Tickora - Live Release Radar",
+  "description": "Tickora tracks upcoming releases across movies, anime, games, dramas, books, and manga with live ticking countdowns and community updates.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

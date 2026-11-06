@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Trash2, Calendar, Bell, ArrowRight, ExternalLink } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
+import { useDropData } from '../../context/DropDataContext';
 
 interface WatchlistDrawerProps {
   isOpen: boolean;
@@ -15,10 +16,12 @@ export const WatchlistDrawer: React.FC<WatchlistDrawerProps> = ({
   onSelectDrop
 }) => {
   const { watchlistIds, toggleWatchlist, clearWatchlist } = useBugle();
+  const { drops } = useDropData();
+  const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
 
   if (!isOpen) return null;
 
-  const trackedDrops = DROP_TITLES_12.filter((d) => watchlistIds.includes(d.id));
+  const trackedDrops = allDrops.filter((d) => watchlistIds.includes(d.id));
 
   return (
     <div className="fixed inset-0 z-[120] overflow-hidden">

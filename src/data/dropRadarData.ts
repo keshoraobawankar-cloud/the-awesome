@@ -20,6 +20,37 @@ export interface DropTitle {
   tagline: string;
   description: string;
   image?: string;
+  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata';
+  sourceId?: string;
+  sourceUrl?: string;
+  locked?: boolean;
+  updatedAt?: string;
+  dateHistory?: Array<{
+    id: string;
+    titleId: string;
+    titleName: string;
+    oldDate: string;
+    newDate: string;
+    detectedAt: string;
+    reason?: string;
+  }>;
+}
+
+export interface UserUpdateSubmission {
+  id: string;
+  targetTitleId?: string;
+  targetTitleName: string;
+  updateType: 'date_change' | 'delay_alert' | 'platform_added' | 'new_release' | 'breaking_scoop';
+  suggestedDate?: string;
+  suggestedStatus?: 'Confirmed' | 'Tentative' | 'Delayed';
+  category: 'Movies' | 'Anime' | 'Games' | 'Dramas' | 'Books' | 'Manga';
+  platform?: string;
+  details: string;
+  sourceUrl?: string;
+  submittedBy: string;
+  status: 'pending' | 'verified' | 'applied' | 'rejected';
+  confirmationsCount: number;
+  submittedAt: string;
 }
 
 export interface CategoryPanel {

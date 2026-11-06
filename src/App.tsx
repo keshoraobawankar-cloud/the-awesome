@@ -5,12 +5,15 @@
 
 import React from 'react';
 import { BugleProvider } from './context/BugleContext';
+import { DropDataProvider } from './context/DropDataContext';
 import { DropRadarApp } from './components/DropRadar/DropRadarApp';
 
 export default function App() {
   return (
     <BugleProvider>
-      <DropRadarApp />
+      <DropDataProvider>
+        <DropRadarApp />
+      </DropDataProvider>
     </BugleProvider>
   );
 }

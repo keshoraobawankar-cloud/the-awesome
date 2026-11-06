@@ -2,10 +2,18 @@ import React, { useRef } from 'react';
 import { Newspaper, Bookmark, Check, ArrowUpRight, Flame, Clock } from 'lucide-react';
 import { STACKING_NEWS, StackingNewsCard, TICKER_HEADLINES } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 import { playBundleThudSound } from '../../utils/audio';
 
 export const NewsStackSection: React.FC = () => {
   const { savedStoryIds, toggleSave, isSaved, isAudioDeskEnabled } = useBugle();
+  const { news } = useDropData();
+
+  const currentNews = (news && news.length > 0) ? news : STACKING_NEWS;
+  const activeHeadlines = [
+    ...currentNews.map(n => n.title),
+    ...TICKER_HEADLINES
+  ];
 
   const handleCardEnter = () => {
     if (isAudioDeskEnabled) {
@@ -23,7 +31,7 @@ export const NewsStackSection: React.FC = () => {
         </div>
         <div className="overflow-hidden flex-1 relative">
           <div className="animate-marquee whitespace-nowrap flex gap-12 text-sm font-inter text-slate-200">
-            {[...TICKER_HEADLINES, ...TICKER_HEADLINES].map((headline, idx) => (
+            {[...activeHeadlines, ...activeHeadlines].map((headline, idx) => (
               <span key={idx} className="inline-flex items-center gap-2 text-slate-200 font-medium">
                 <span>{headline}</span>
                 <span className="text-[#8b5cf6] font-bold">•</span>
@@ -50,7 +58,7 @@ export const NewsStackSection: React.FC = () => {
 
         {/* Sticky Stacking Cards Container */}
         <div className="relative pb-24 space-y-12">
-          {STACKING_NEWS.map((card, idx) => {
+          {currentNews.map((card, idx) => {
             const isBookmarked = isSaved(card.id);
             // Sticky top offset increases slightly per card
             const topOffset = 100 + idx * 24;

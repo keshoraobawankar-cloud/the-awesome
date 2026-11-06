@@ -1,0 +1,35 @@
+name: Update releases
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"     # every 6 hours (UTC)
+  workflow_dispatch:           # manual "Run" button in GitHub Actions UI
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Fetch TMDB Releases
+        run: node scripts/fetch-tmdb.mjs
+        env:
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Fetch AniList Anime & Manga Releases
+        run: node scripts/fetch-anilist.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

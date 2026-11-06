@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Bell, Check, Play, Calendar, ExternalLink, Sparkles, Flame } from 'lucide-react';
 import { HERO_FEATURED_DROP, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import confetti from 'canvas-confetti';
@@ -19,13 +20,16 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
   const digitsRef = useRef<HTMLDivElement>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
 
+  const { heroDrop } = useDropData();
+  const currentDrop = heroDrop || HERO_FEATURED_DROP;
+
   const { isWatchlisted, toggleWatchlist } = useBugle();
-  const isSaved = isWatchlisted(HERO_FEATURED_DROP.id);
+  const isSaved = isWatchlisted(currentDrop.id);
 
   // Live countdown state
-  const targetDate = new Date('2026-11-19T00:00:00Z').getTime();
+  const targetDate = new Date(currentDrop.date).getTime() || new Date('2026-11-19T00:00:00Z').getTime();
   const [timeLeft, setTimeLeft] = useState({
-    days: 13,
+    days: currentDrop.daysRemaining || 13,
     hours: 8,
     minutes: 42,
     seconds: 19
@@ -100,7 +104,7 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
 
   const handleRemindMe = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleWatchlist(HERO_FEATURED_DROP.id, HERO_FEATURED_DROP.name);
+    toggleWatchlist(currentDrop.id, currentDrop.name);
     if (!isSaved) {
       confetti({
         particleCount: 50,
@@ -121,7 +125,7 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
       <div className="absolute inset-0 overflow-hidden">
         <img
           ref={bgImageRef}
-          src="/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg"
+          src={currentDrop.image || "/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg"}
           alt="Hero Featured Drop Backdrop"
           className="w-full h-full object-cover filter brightness-[0.38] contrast-125 will-change-transform transform scale-100"
         />
@@ -138,20 +142,20 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
             #1 Most Anticipated Drop
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-medium">
-            {HERO_FEATURED_DROP.platform}
+            {currentDrop.platform}
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-bold">
-            CONFIRMED WORLDWIDE
+            {currentDrop.status.toUpperCase()} WORLDWIDE
           </span>
         </div>
 
         {/* Big Release Title */}
         <div ref={contentCardRef} className="will-change-transform">
           <h2 className="font-bebas text-5xl sm:text-7xl md:text-8xl tracking-tight text-white mb-2 text-glow-red">
-            {HERO_FEATURED_DROP.name}
+            {currentDrop.name}
           </h2>
           <p className="text-slate-300 text-sm sm:text-lg max-w-2xl mx-auto font-inter font-light mb-8">
-            {HERO_FEATURED_DROP.tagline}
+            {currentDrop.tagline}
           </p>
         </div>
 
@@ -208,7 +212,7 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
           </button>
 
           <button
-            onClick={() => onOpenModal(HERO_FEATURED_DROP)}
+            onClick={() => onOpenModal(currentDrop)}
             className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-white font-inter font-semibold text-sm sm:text-base flex items-center gap-2 transition-all hover:border-cyan-400 group"
           >
             <Play className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform fill-cyan-400" />
@@ -220,10 +224,10 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
         <div className="mt-8 flex items-center gap-4 text-xs font-mono text-slate-400">
           <span className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-            Launch Date: November 19, 2026
+            Launch Date: {currentDrop.date}
           </span>
           <span>•</span>
-          <span>Verified by DropRadar Desk</span>
+          <span>Verified by Tickora Desk</span>
         </div>
       </div>
     </section>

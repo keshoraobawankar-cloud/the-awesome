@@ -1,10 +1,12 @@
 import React from 'react';
-import { Search, Bell, Volume2, VolumeX, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
+import { Search, Bell, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, Radio, PlusCircle } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
 
 interface DropNavbarProps {
   onOpenSearch: () => void;
   onOpenWatchlist: () => void;
+  onOpenLiveSync?: () => void;
+  onOpenUserUpdates?: () => void;
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
   onScrollToSection: (sectionId: string) => void;
@@ -13,11 +15,13 @@ interface DropNavbarProps {
 export const DropNavbar: React.FC<DropNavbarProps> = ({
   onOpenSearch,
   onOpenWatchlist,
+  onOpenLiveSync,
+  onOpenUserUpdates,
   selectedCategory,
   onSelectCategory,
   onScrollToSection
 }) => {
-  const { isAudioDeskEnabled, toggleAudioDesk, watchlistIds } = useBugle();
+  const { watchlistIds } = useBugle();
 
   const categories = [
     { label: 'All', icon: Layers, id: 'all' },
@@ -37,7 +41,7 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
           <button
             onClick={() => onScrollToSection('intro')}
             className="flex items-center gap-3 group text-left focus:outline-none"
-            aria-label="DropRadar Home"
+            aria-label="Tickora Home"
           >
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] p-[2px] shadow-[0_0_15px_rgba(139,92,246,0.4)] group-hover:shadow-[0_0_25px_rgba(34,211,238,0.6)] transition-all">
               <div className="w-full h-full bg-[#0b0d1a] rounded-[10px] flex items-center justify-center">
@@ -48,12 +52,9 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
               </div>
             </div>
             <div>
-              <div className="font-bebas text-2xl sm:text-3xl tracking-wider text-white flex items-center gap-1">
-                DROP<span className="text-[#22d3ee]">RADAR</span>
-              </div>
-              <p className="text-[10px] uppercase tracking-widest text-[#8b5cf6] font-inter font-semibold hidden sm:block -mt-1">
-                Cinematic Release Tracker
-              </p>
+              <span className="font-bebas text-2xl sm:text-3xl tracking-wider text-white">
+                TICK<span className="text-[#22d3ee]">ORA</span>
+              </span>
             </div>
           </button>
 
@@ -84,6 +85,35 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
 
           {/* Right Action Tools */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Submit Update Button ("user should give updates") */}
+            {onOpenUserUpdates && (
+              <button
+                onClick={onOpenUserUpdates}
+                className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-indigo-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs sm:text-sm font-inter font-medium transition-all shadow-[0_0_12px_rgba(34,211,238,0.2)] group"
+                title="Submit a release update, date delay, or scoop"
+              >
+                <PlusCircle className="w-4 h-4 text-cyan-400 group-hover:rotate-90 transition-transform" />
+                <span className="hidden sm:inline">Submit Update</span>
+                <span className="sm:hidden">Update</span>
+              </button>
+            )}
+
+            {/* Live Sync Engine Badge Button */}
+            {onOpenLiveSync && (
+              <button
+                onClick={onOpenLiveSync}
+                className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-slate-300 hover:text-white text-xs font-inter transition-all group"
+                title="Open Live Radar Data Engine & Sync Status"
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <Radio className="w-3.5 h-3.5 text-emerald-400 hidden xs:inline" />
+                <span className="hidden md:inline text-xs font-mono font-medium text-emerald-400">LIVE SYNC</span>
+              </button>
+            )}
+
             {/* Search Button with Cmd+K hint */}
             <button
               onClick={onOpenSearch}
@@ -97,28 +127,6 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
               </kbd>
             </button>
 
-            {/* Audio Cue Desk Toggle */}
-            <button
-              onClick={toggleAudioDesk}
-              className={`p-2 sm:px-3 sm:py-2 rounded-xl border text-xs sm:text-sm font-inter flex items-center gap-1.5 transition-all ${
-                isAudioDeskEnabled
-                  ? 'bg-[#8b5cf6]/20 border-[#8b5cf6] text-[#22d3ee] shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                  : 'bg-[#171a30] border-[#2b3052] text-slate-400 hover:text-slate-200'
-              }`}
-              title={isAudioDeskEnabled ? 'Mute cinematic sound effects' : 'Enable cinematic sound effects'}
-            >
-              {isAudioDeskEnabled ? (
-                <>
-                  <Volume2 className="w-4 h-4 text-[#22d3ee] animate-pulse" />
-                  <span className="hidden sm:inline font-mono text-xs text-[#22d3ee]">AUDIO ON</span>
-                </>
-              ) : (
-                <>
-                  <VolumeX className="w-4 h-4 text-slate-400" />
-                  <span className="hidden sm:inline font-mono text-xs">MUTED</span>
-                </>
-              )}
-            </button>
 
             {/* Watchlist Drawer Button */}
             <button

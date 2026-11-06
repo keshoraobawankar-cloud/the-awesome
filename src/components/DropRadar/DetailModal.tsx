@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Check, Play, Calendar, ExternalLink, Sparkles, Share2, ShieldCheck, Film } from 'lucide-react';
+import { X, Bell, Check, Play, Calendar, ExternalLink, Sparkles, Share2, ShieldCheck, Film, Lock, Unlock, Radio, PlusCircle } from 'lucide-react';
 import { DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 import confetti from 'canvas-confetti';
 
 interface DetailModalProps {
   drop: DropTitle | null;
   onClose: () => void;
+  onOpenUserUpdate?: (titleId: string, titleName: string) => void;
 }
 
-export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose }) => {
+export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenUserUpdate }) => {
   const { isWatchlisted, toggleWatchlist, showToast } = useBugle();
+  const { updateDropStatus, toggleDropLock, updateDropDate, dateHistory } = useDropData();
   const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [isEditingDate, setIsEditingDate] = useState(false);
+  const [newDateInput, setNewDateInput] = useState('');
+  const [shiftReason, setShiftReason] = useState('');
 
   // Live countdown calculation
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -133,27 +139,59 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose }) => {
         <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1">
           {/* Top metadata tags */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white">
                 {drop.category}
               </span>
               <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-[#171a30] text-cyan-300 border border-[#2b3052]">
                 {drop.platform}
               </span>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-[#141830] text-slate-300 border border-[#2b3052] flex items-center gap-1">
+                <Radio className="w-3 h-3 text-cyan-400" />
+                {drop.source === 'anilist' ? 'AniList Live' : drop.source === 'openlibrary' ? 'Open Library' : drop.source === 'tmdb' ? 'TMDB Cinema' : drop.source === 'manual' ? 'Editorial Entry' : 'Verified Radar'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2 text-xs font-mono font-bold">
-              <span
-                className={`px-3 py-1 rounded-full border ${
-                  drop.status === 'Confirmed'
-                    ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                    : drop.status === 'Tentative'
-                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
-                    : 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+              {/* Status Switcher */}
+              <div className="flex items-center gap-1 bg-[#121528] p-1 rounded-xl border border-[#252846]">
+                {(['Confirmed', 'Tentative', 'Delayed'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      updateDropStatus(drop.id, s);
+                      showToast(`Status updated to ${s}`);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] uppercase font-mono transition-all ${
+                      drop.status === s
+                        ? s === 'Confirmed'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                          : s === 'Tentative'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/50'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Lock Button */}
+              <button
+                onClick={() => {
+                  toggleDropLock(drop.id);
+                  showToast(drop.locked ? 'Field unlocked' : 'Field locked from auto-overwrite');
+                }}
+                className={`p-1.5 rounded-xl border transition-all ${
+                  drop.locked
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-400'
+                    : 'bg-[#171a30] border-[#2b3052] text-slate-400 hover:text-white'
                 }`}
+                title={drop.locked ? 'Locked: Scheduled sync will never overwrite manual edits' : 'Unlocked: May update during scheduled sync'}
               >
-                {drop.status}
-              </span>
+                {drop.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
 
@@ -194,6 +232,95 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose }) => {
             </div>
           </div>
 
+          {/* Date Revision Tracker & Delay Tester */}
+          <div className="p-4 rounded-xl bg-[#141830] border border-[#2b3055] space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-mono font-semibold text-slate-300">
+                <Calendar className="w-3.5 h-3.5 text-[#22d3ee]" />
+                <span>Date History & Schedule Shifts</span>
+                {drop.dateHistory && drop.dateHistory.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px]">
+                    {drop.dateHistory.length} Reschedules
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingDate(!isEditingDate);
+                  setNewDateInput(drop.date);
+                }}
+                className="text-xs font-inter text-cyan-400 hover:text-cyan-300 underline"
+              >
+                {isEditingDate ? 'Cancel' : 'Simulate Date Shift'}
+              </button>
+            </div>
+
+            {/* Date shift input form */}
+            {isEditingDate && (
+              <div className="p-3 bg-[#0b0d1a] border border-[#272c4e] rounded-lg space-y-2 animate-fadeIn text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-slate-400 block mb-1">
+                      New Target Date
+                    </label>
+                    <input
+                      type="date"
+                      value={newDateInput}
+                      onChange={(e) => setNewDateInput(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-[#171a30] border border-[#2b3052] rounded-lg text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-mono uppercase text-slate-400 block mb-1">
+                      Revision Reason
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Studio VFX polish or holiday slot"
+                      value={shiftReason}
+                      onChange={(e) => setShiftReason(e.target.value)}
+                      className="w-full px-2.5 py-1.5 bg-[#171a30] border border-[#2b3052] rounded-lg text-white"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newDateInput || newDateInput === drop.date) return;
+                      await updateDropDate(drop.id, newDateInput, shiftReason);
+                      showToast(`Date updated to ${newDateInput} — Delay alert added to queue!`);
+                      setIsEditingDate(false);
+                    }}
+                    className="px-3 py-1 bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white rounded-lg font-semibold shadow"
+                  >
+                    Apply & Log Delay Alert
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* List past date revisions */}
+            {drop.dateHistory && drop.dateHistory.length > 0 ? (
+              <div className="space-y-1.5 pt-1">
+                {drop.dateHistory.map((hist) => (
+                  <div key={hist.id} className="text-[11px] font-mono flex items-start gap-2 text-slate-400 bg-[#0b0d1a]/60 p-2 rounded-lg border border-[#222642]">
+                    <span className="text-amber-400 shrink-0">Moved:</span>
+                    <span className="line-through text-slate-500">{hist.oldDate}</span>
+                    <span>→</span>
+                    <span className="text-emerald-400 font-bold">{hist.newDate}</span>
+                    {hist.reason && <span className="text-slate-400 italic">({hist.reason})</span>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-slate-400 font-inter">
+                No delay alerts on record. Date currently verified by studio distribution lock.
+              </p>
+            )}
+          </div>
+
           {/* Synopsis */}
           <div>
             <h4 className="text-xs font-mono uppercase tracking-widest text-slate-400 mb-2">
@@ -226,11 +353,25 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose }) => {
               >
                 <Share2 className="w-4 h-4" />
               </button>
+
+              {onOpenUserUpdate && (
+                <button
+                  onClick={() => {
+                    onClose();
+                    onOpenUserUpdate(drop.id, drop.name);
+                  }}
+                  className="px-3.5 py-3 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 hover:text-white font-inter text-xs flex items-center gap-1.5 transition-colors"
+                  title="Submit a community date revision, delay scoop, or platform change for this title"
+                >
+                  <PlusCircle className="w-4 h-4 text-cyan-400" />
+                  <span>Submit Date Update</span>
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Audited by DropRadar Desk</span>
+              <span>Audited by Tickora Desk</span>
             </div>
           </div>
         </div>

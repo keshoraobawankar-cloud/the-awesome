@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bookmark, Moon, Sun, Scroll, Flame, Camera, Mic, Volume2 } from 'lucide-react';
+import { Bookmark, Moon, Sun, Scroll, Flame, Camera, Mic } from 'lucide-react';
 import { useBugle, BugleTheme } from '../context/BugleContext';
 
 export const Header: React.FC = () => {

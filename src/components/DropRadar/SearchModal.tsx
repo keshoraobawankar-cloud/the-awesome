@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Calendar, ArrowRight, Film, Sparkles, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
+import { useDropData } from '../../context/DropDataContext';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -9,6 +10,8 @@ interface SearchModalProps {
 }
 
 export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSelectDrop }) => {
+  const { drops } = useDropData();
+  const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +49,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSel
     return () => window.removeEventListener('keydown', handleKeyDown);
   });
 
-  const filteredDrops = DROP_TITLES_12.filter((drop) => {
+  const filteredDrops = allDrops.filter((drop) => {
     if (!query.trim()) return true;
     const q = query.toLowerCase();
     return (

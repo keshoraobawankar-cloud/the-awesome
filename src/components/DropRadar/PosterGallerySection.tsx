@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Eye, Bell, Check, Sparkles } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -17,10 +18,14 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
   const col2Ref = useRef<HTMLDivElement>(null);
   const col3Ref = useRef<HTMLDivElement>(null);
 
-  // Divide the 12 titles into 3 columns
-  const col1 = DROP_TITLES_12.slice(0, 4);
-  const col2 = DROP_TITLES_12.slice(4, 8);
-  const col3 = DROP_TITLES_12.slice(8, 12);
+  const { drops } = useDropData();
+  const displayDrops = (drops && drops.length >= 6) ? drops : DROP_TITLES_12;
+
+  // Divide the titles into 3 columns
+  const perCol = Math.ceil(displayDrops.length / 3);
+  const col1 = displayDrops.slice(0, perCol);
+  const col2 = displayDrops.slice(perCol, perCol * 2);
+  const col3 = displayDrops.slice(perCol * 2);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
