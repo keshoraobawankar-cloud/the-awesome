@@ -2,6 +2,7 @@ import { db } from './db';
 import { fetchAniListReleases } from './fetchers/anilist';
 import { fetchOpenLibraryReleases } from './fetchers/openLibrary';
 import { fetchTMDBReleases } from './fetchers/tmdb';
+import { fetchCinemaMovies } from './fetchers/cinemaMovies';
 import { fetchLiveNewsFeeds } from './fetchers/rssNews';
 
 function slugify(text: string): string {
@@ -50,7 +51,19 @@ export async function runFullSync(isManual = false): Promise<{
     }
     db.addLog('success', `Open Library sync processed: ${bookDrops.length} books received.`);
 
-    // 3. Fetch TMDB
+    // 3. Fetch Hollywood & Bollywood Movies (Wikipedia Film Registries + Wikidata)
+    db.addLog('info', 'Syncing Hollywood & Bollywood upcoming movies from Wikipedia & Wikidata registries...');
+    const cinemaDrops = await fetchCinemaMovies();
+    for (const drop of cinemaDrops) {
+      const res = db.upsertDrop(drop, true);
+      if (res.status === 'added') addedCount++;
+      if (res.status === 'updated') updatedCount++;
+      if (res.status === 'skipped_locked') skippedLockedCount++;
+      if (res.dateChanged) dateChangesCount++;
+    }
+    db.addLog('success', `Cinema registry sync processed: ${cinemaDrops.length} Hollywood & Bollywood titles.`);
+
+    // 4. Fetch TMDB
     db.addLog('info', 'Querying TMDB / Theatrical Cinema radar...');
     const tmdbDrops = await fetchTMDBReleases();
     for (const drop of tmdbDrops) {
@@ -65,7 +78,7 @@ export async function runFullSync(isManual = false): Promise<{
     db.addLog('info', 'Parsing live entertainment wire headlines...');
     const newsCards = await fetchLiveNewsFeeds();
     if (newsCards.length > 0) {
-      db.setNews(newsCards);
+      db.mergeLiveNews(newsCards);
     }
     db.addLog('success', `News wire refreshed: ${newsCards.length} dispatches available.`);
 
@@ -119,21 +132,41 @@ export async function runFullSync(isManual = false): Promise<{
 }
 
 let syncInterval: NodeJS.Timeout | null = null;
+let hasRunInitialSync = false;
 
-export function startScheduledSyncEngine() {
-  if (syncInterval) return;
+export function restartScheduledSyncEngine() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
 
-  // Run initial sync after 2 seconds so server is fully booted
-  setTimeout(() => {
-    runFullSync(false).catch(err => {
-      console.warn('[Sync Engine] Initial sync notice:', err.message);
-    });
-  }, 2000);
+  const { autoSyncEnabled, syncIntervalMinutes } = db.getSyncConfig();
+  if (!autoSyncEnabled) {
+    return;
+  }
 
-  // Set recurring interval: every 15 minutes
+  const intervalMs = syncIntervalMinutes * 60 * 1000;
+  db.setNextScheduledSync(new Date(Date.now() + intervalMs).toISOString());
+
   syncInterval = setInterval(() => {
+    const cfg = db.getSyncConfig();
+    if (!cfg.autoSyncEnabled) return;
     runFullSync(false).catch(err => {
       console.warn('[Sync Engine] Scheduled sync notice:', err.message);
     });
-  }, 15 * 60 * 1000);
+  }, intervalMs);
+}
+
+export function startScheduledSyncEngine() {
+  if (!hasRunInitialSync) {
+    hasRunInitialSync = true;
+    // Run initial sync shortly after server boot
+    setTimeout(() => {
+      runFullSync(false).catch(err => {
+        console.warn('[Sync Engine] Initial sync notice:', err.message);
+      });
+    }, 1500);
+  }
+
+  restartScheduledSyncEngine();
 }

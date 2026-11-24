@@ -1,6 +1,6 @@
 {
-  "name": "Tickora - Live Release Radar",
-  "description": "Tickora tracks upcoming releases across movies, anime, games, dramas, books, and manga with live ticking countdowns and community updates.",
+  "name": "AheadOfYou - Live Release Radar",
+  "description": "AheadOfYou tracks upcoming releases across movies, anime, games, dramas, books, and manga with live ticking countdowns and community updates.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

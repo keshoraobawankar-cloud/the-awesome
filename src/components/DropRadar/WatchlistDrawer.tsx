@@ -1,8 +1,9 @@
 import React from 'react';
-import { X, Trash2, Calendar, Bell, ArrowRight, ExternalLink } from 'lucide-react';
+import { X, Trash2, Calendar, Bell, BellRing } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface WatchlistDrawerProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const WatchlistDrawer: React.FC<WatchlistDrawerProps> = ({
 }) => {
   const { watchlistIds, toggleWatchlist, clearWatchlist } = useBugle();
   const { drops } = useDropData();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
 
   if (!isOpen) return null;
@@ -99,10 +101,31 @@ export const WatchlistDrawer: React.FC<WatchlistDrawerProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 pl-2">
+                  <div className="flex items-center gap-1.5 pl-2">
                     <span className="text-xs font-mono font-bold text-[#ff3d71]">
                       T-{drop.daysRemaining}D
                     </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                        openNotifyModal({
+                          targetId: drop.id,
+                          targetName: drop.name,
+                          targetType: 'drop',
+                          category: drop.category,
+                          targetDate: drop.date
+                        });
+                      }}
+                      className={`p-2 rounded-lg transition-colors ${
+                        hasActiveRuleFor(drop.id)
+                          ? 'text-cyan-300 bg-cyan-500/20'
+                          : 'text-slate-400 hover:text-cyan-300 hover:bg-[#252846]'
+                      }`}
+                      title="Configure custom notification"
+                    >
+                      <BellRing className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

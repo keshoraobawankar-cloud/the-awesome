@@ -1,20 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Check, Play, Calendar, ExternalLink, Sparkles, Share2, ShieldCheck, Film, Lock, Unlock, Radio, PlusCircle } from 'lucide-react';
+import { X, Bell, BellRing, Check, Play, Calendar, ExternalLink, Sparkles, Share2, ShieldCheck, Film, Lock, Unlock, Radio, PlusCircle } from 'lucide-react';
 import { DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import confetti from 'canvas-confetti';
 
 interface DetailModalProps {
   drop: DropTitle | null;
+  initialPlayTrailer?: boolean;
   onClose: () => void;
   onOpenUserUpdate?: (titleId: string, titleName: string) => void;
+  onShareDrop?: (drop: DropTitle) => void;
 }
 
-export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenUserUpdate }) => {
+export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrailer = false, onClose, onOpenUserUpdate, onShareDrop }) => {
   const { isWatchlisted, toggleWatchlist, showToast } = useBugle();
-  const { updateDropStatus, toggleDropLock, updateDropDate, dateHistory } = useDropData();
+  const { updateDropStatus, toggleDropLock, updateDropDate, resolveOfficialTrailer, attachOfficialTrailer } = useDropData();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
+  const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
+  const [resolvedTrailer, setResolvedTrailer] = useState<{
+    trailerUrl?: string;
+    trailerEmbedUrl?: string;
+    trailerSource?: string;
+  } | null>(null);
+  const [customTrailerInput, setCustomTrailerInput] = useState('');
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [newDateInput, setNewDateInput] = useState('');
   const [shiftReason, setShiftReason] = useState('');
@@ -24,7 +35,32 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
 
   useEffect(() => {
     if (!drop) return;
-    setIsPlayingTrailer(false);
+    let cancelled = false;
+    setResolvedTrailer(null);
+    setCustomTrailerInput('');
+
+    if (initialPlayTrailer) {
+      setIsPlayingTrailer(true);
+      if (!drop.trailerEmbedUrl) {
+        setIsLoadingTrailer(true);
+        resolveOfficialTrailer(drop.id)
+          .then((result) => {
+            if (!cancelled) {
+              setResolvedTrailer(result);
+            }
+          })
+          .finally(() => {
+            if (!cancelled) {
+              setIsLoadingTrailer(false);
+            }
+          });
+      } else {
+        setIsLoadingTrailer(false);
+      }
+    } else {
+      setIsPlayingTrailer(false);
+      setIsLoadingTrailer(false);
+    }
 
     const target = new Date(drop.date).getTime() || Date.now() + drop.daysRemaining * 86400000;
 
@@ -40,12 +76,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
 
     calc();
     const interval = setInterval(calc, 1000);
-    return () => clearInterval(interval);
-  }, [drop]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [drop, initialPlayTrailer]);
 
   if (!drop) return null;
 
   const isSaved = isWatchlisted(drop.id);
+  const hasCustomAlert = hasActiveRuleFor(drop.id);
 
   const handleToggleReminder = () => {
     toggleWatchlist(drop.id, drop.name);
@@ -60,8 +100,14 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
   };
 
   const handleShare = () => {
+    if (onShareDrop) {
+      onClose();
+      onShareDrop(drop);
+      return;
+    }
+    const directUrl = `${window.location.origin}/?movie=${encodeURIComponent(drop.id)}#cinema-hub`;
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(directUrl);
       showToast('Drop link copied to clipboard!');
     }
   };
@@ -87,21 +133,122 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
         {/* Video / Trailer Area (16:9 ratio) */}
         <div className="relative aspect-video w-full bg-[#0b0d1a] overflow-hidden flex-shrink-0">
           {isPlayingTrailer ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-black p-6 text-center">
-              <Film className="w-12 h-12 text-cyan-400 animate-pulse mb-3" />
-              <p className="font-bebas text-2xl text-white tracking-wide">
-                STREAMING TEASER TRAILER
-              </p>
-              <p className="text-xs text-slate-400 font-mono mt-1">
-                Official {drop.category} Preview Feed · 4K HDR 60FPS
-              </p>
-              <button
-                onClick={() => setIsPlayingTrailer(false)}
-                className="mt-4 px-4 py-1.5 rounded-lg bg-[#252846] text-xs font-mono text-slate-300 hover:text-white"
-              >
-                Close Trailer Player
-              </button>
-            </div>
+            (() => {
+              const activeEmbed = resolvedTrailer?.trailerEmbedUrl || drop.trailerEmbedUrl;
+              const activeWatchUrl =
+                resolvedTrailer?.trailerUrl ||
+                drop.trailerUrl ||
+                `https://www.youtube.com/results?search_query=${encodeURIComponent(drop.name + ' official trailer')}`;
+              const activeSource = resolvedTrailer?.trailerSource || drop.trailerSource || 'Official Channel';
+
+              if (isLoadingTrailer) {
+                return (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-black p-6 text-center">
+                    <Film className="w-12 h-12 text-cyan-400 animate-pulse mb-3" />
+                    <p className="font-bebas text-2xl text-white tracking-wide">
+                      LOCATING OFFICIAL TRAILER...
+                    </p>
+                    <p className="text-xs text-slate-400 font-mono mt-1">
+                      Querying AniList / TMDB Official Video Feed
+                    </p>
+                  </div>
+                );
+              }
+
+              if (activeEmbed) {
+                return (
+                  <div className="relative w-full h-full bg-black">
+                    <iframe
+                      src={activeEmbed}
+                      title={`${drop.name} Official Trailer`}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allowFullScreen
+                    />
+                    <div className="absolute bottom-3 left-3 right-14 flex items-center justify-between pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-md bg-[#0b0d1a]/85 border border-cyan-500/40 text-[11px] font-mono text-cyan-300 backdrop-blur-md">
+                        {activeSource}
+                      </span>
+                      <div className="flex items-center gap-2 pointer-events-auto">
+                        <a
+                          href={activeWatchUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 rounded-md bg-[#0b0d1a]/90 hover:bg-[#171a30] border border-[#2b3052] text-[11px] font-mono text-white flex items-center gap-1"
+                        >
+                          <span>Watch Official</span>
+                          <ExternalLink className="w-3 h-3 text-cyan-400" />
+                        </a>
+                        <button
+                          onClick={() => setIsPlayingTrailer(false)}
+                          className="px-2.5 py-1 rounded-md bg-[#0b0d1a]/90 hover:bg-[#252846] border border-[#2b3052] text-[11px] font-mono text-slate-300 hover:text-white"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#080a16] p-6 text-center space-y-3">
+                  <Film className="w-10 h-10 text-cyan-400" />
+                  <div>
+                    <p className="font-bebas text-2xl text-white tracking-wide">
+                      OFFICIAL SOURCE TRAILER
+                    </p>
+                    <p className="text-xs text-slate-400 font-inter max-w-md mt-1">
+                      Open the official trailer search or attach a direct YouTube official trailer URL below.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <a
+                      href={activeWatchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white text-xs font-bold flex items-center gap-1.5"
+                    >
+                      <span>Search Official Trailer</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => setIsPlayingTrailer(false)}
+                      className="px-4 py-2 rounded-xl bg-[#171a30] border border-[#2b3052] text-xs font-mono text-slate-300 hover:text-white"
+                    >
+                      Back
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2 w-full max-w-md pt-1">
+                    <input
+                      type="url"
+                      value={customTrailerInput}
+                      onChange={(e) => setCustomTrailerInput(e.target.value)}
+                      placeholder="Paste official YouTube trailer URL..."
+                      className="flex-1 px-3 py-1.5 rounded-lg bg-[#121528] border border-[#2b3052] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!customTrailerInput.trim()) return;
+                        const ok = await attachOfficialTrailer(drop.id, customTrailerInput.trim());
+                        if (ok) {
+                          const fetched = await resolveOfficialTrailer(drop.id);
+                          setResolvedTrailer(fetched);
+                          showToast('Official trailer linked!');
+                        } else {
+                          showToast('Please enter a valid trailer URL.');
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs font-mono font-bold hover:bg-cyan-500/30"
+                    >
+                      Attach
+                    </button>
+                  </div>
+                </div>
+              );
+            })()
           ) : (
             <div className="relative w-full h-full group">
               <img
@@ -113,7 +260,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
 
               {/* Play Trailer Button overlay */}
               <button
-                onClick={() => setIsPlayingTrailer(true)}
+                onClick={async () => {
+                  setIsPlayingTrailer(true);
+                  if (!drop.trailerEmbedUrl) {
+                    setIsLoadingTrailer(true);
+                    const result = await resolveOfficialTrailer(drop.id);
+                    setResolvedTrailer(result);
+                    setIsLoadingTrailer(false);
+                  }
+                }}
                 className="absolute inset-0 flex items-center justify-center group-hover:scale-105 transition-transform"
               >
                 <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] p-[2px] shadow-[0_0_30px_rgba(34,211,238,0.5)]">
@@ -125,10 +280,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
 
               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs font-mono text-white pointer-events-none">
                 <span className="bg-[#0b0d1a]/80 px-2.5 py-1 rounded-md border border-[#252846]">
-                  Click to play trailer
+                  Click to play official trailer
                 </span>
                 <span className="bg-[#0b0d1a]/80 px-2.5 py-1 rounded-md border border-[#252846] text-cyan-400">
-                  4K Official Teaser
+                  {drop.trailerSource || 'Official Source Ready'}
                 </span>
               </div>
             </div>
@@ -143,13 +298,47 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
               <span className="px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white">
                 {drop.category}
               </span>
+              {drop.industry && (
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider border ${
+                    drop.industry === 'Bollywood'
+                      ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                      : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                  }`}
+                >
+                  {drop.industry}
+                </span>
+              )}
               <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-[#171a30] text-cyan-300 border border-[#2b3052]">
                 {drop.platform}
               </span>
               <span className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-[#141830] text-slate-300 border border-[#2b3052] flex items-center gap-1">
                 <Radio className="w-3 h-3 text-cyan-400" />
-                {drop.source === 'anilist' ? 'AniList Live' : drop.source === 'openlibrary' ? 'Open Library' : drop.source === 'tmdb' ? 'TMDB Cinema' : drop.source === 'manual' ? 'Editorial Entry' : 'Verified Radar'}
+                {drop.trustedSourceLabel
+                  ? drop.trustedSourceLabel
+                  : drop.source === 'anilist'
+                  ? 'AniList Live'
+                  : drop.source === 'openlibrary'
+                  ? 'Open Library'
+                  : drop.source === 'tmdb'
+                  ? 'TMDB Cinema'
+                  : drop.source === 'wikipedia'
+                  ? 'Wikipedia Film Registry'
+                  : drop.source === 'manual'
+                  ? 'Editorial Entry'
+                  : 'Verified Radar'}
               </span>
+              {drop.sourceUrl && (
+                <a
+                  href={drop.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-full text-[10px] font-mono uppercase bg-[#141830] text-cyan-300 hover:text-white border border-[#2b3052] hover:border-cyan-400 flex items-center gap-1 transition-colors"
+                >
+                  <span>Registry Source</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
             </div>
 
             <div className="flex items-center gap-2 text-xs font-mono font-bold">
@@ -336,7 +525,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
             <div className="flex items-center gap-2">
               <button
                 onClick={handleToggleReminder}
-                className={`px-6 py-3 rounded-xl font-inter font-bold text-sm flex items-center gap-2 shadow-lg transition-all ${
+                className={`px-5 py-3 rounded-xl font-inter font-bold text-sm flex items-center gap-2 shadow-lg transition-all ${
                   isSaved
                     ? 'bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)]'
                     : 'bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white hover:scale-105 shadow-[0_0_20px_rgba(255,61,113,0.3)]'
@@ -344,6 +533,28 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
               >
                 {isSaved ? <Check className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
                 <span>{isSaved ? 'In Your Watchlist' : 'Remind Me on Launch'}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  onClose();
+                  openNotifyModal({
+                    targetId: drop.id,
+                    targetName: drop.name,
+                    targetType: 'drop',
+                    category: drop.category,
+                    targetDate: drop.date
+                  });
+                }}
+                className={`px-4 py-3 rounded-xl font-inter font-semibold text-xs sm:text-sm flex items-center gap-2 border transition-all ${
+                  hasCustomAlert
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
+                    : 'bg-[#171a30] hover:bg-[#202444] border-[#2b3052] text-cyan-300 hover:text-white'
+                }`}
+                title="Configure custom notification timing, triggers, and browser push alert"
+              >
+                <BellRing className="w-4 h-4 text-cyan-400" />
+                <span>{hasCustomAlert ? 'Edit Alert' : 'Set Notification'}</span>
               </button>
 
               <button
@@ -371,7 +582,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, onClose, onOpenU
 
             <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Audited by Tickora Desk</span>
+              <span>Audited by AheadOfYou Desk</span>
             </div>
           </div>
         </div>

@@ -1,6 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Film, Sparkles, Gamepad2, Tv, BookOpen, Layers, ArrowRight } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Film, Sparkles, Gamepad2, Tv, BookOpen, Layers, ArrowRight, BellRing } from 'lucide-react';
 import { CATEGORY_PANELS, CategoryPanel } from '../../data/dropRadarData';
+import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -17,6 +19,20 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const { drops } = useDropData();
+
+  const livePanels = useMemo(() => {
+    return CATEGORY_PANELS.map((panel) => {
+      const catName = panel.title.split(' ')[0].toLowerCase();
+      const catDrops = (drops || []).filter((d) => d.category.toLowerCase() === catName);
+      if (catDrops.length === 0) return panel;
+      return {
+        ...panel,
+        count: Math.max(panel.count, catDrops.length),
+        featuredTitle: catDrops[0].name || panel.featuredTitle
+      };
+    });
+  }, [drops]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -73,7 +89,7 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
           ref={trackRef}
           className="flex gap-6 sm:gap-8 px-6 sm:px-12 w-max will-change-transform"
         >
-          {CATEGORY_PANELS.map((panel, idx) => (
+          {livePanels.map((panel, idx) => (
             <CategoryCard
               key={panel.id}
               panel={panel}
@@ -97,8 +113,12 @@ const CategoryCard: React.FC<{
   onSelect: () => void;
 }> = ({ panel, index, onSelect }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
   const [displayCount, setDisplayCount] = useState(0);
+  const categoryName = panel.title.split(' ')[0];
+  const catTargetId = `cat-${categoryName.toLowerCase()}`;
+  const hasAlert = hasActiveRuleFor(catTargetId);
 
   // Animate count-up number
   useEffect(() => {
@@ -185,9 +205,31 @@ const CategoryCard: React.FC<{
         <div className="p-3 rounded-2xl bg-[#0b0d1a]/80 border border-[#2b3052] backdrop-blur-md">
           {getIcon()}
         </div>
-        <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">
-          0{index + 1}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openNotifyModal({
+                targetId: catTargetId,
+                targetName: `${categoryName} Releases & Updates`,
+                targetType: 'category',
+                category: categoryName
+              });
+            }}
+            className={`px-2.5 py-1.5 rounded-xl border text-[11px] font-mono flex items-center gap-1 transition-all ${
+              hasAlert
+                ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200'
+                : 'bg-[#0b0d1a]/80 border-[#2b3052] text-slate-300 hover:border-cyan-400 hover:text-white'
+            }`}
+            title={`Set notifications for ${categoryName}`}
+          >
+            <BellRing className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{hasAlert ? 'Alert On' : 'Notify'}</span>
+          </button>
+          <span className="text-xs font-mono uppercase tracking-widest text-slate-400 font-semibold">
+            0{index + 1}
+          </span>
+        </div>
       </div>
 
       {/* Center Big Number Count */}

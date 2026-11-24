@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { Eye, Bell, Check, Sparkles } from 'lucide-react';
+import { Eye, Bell, BellRing, Check, Sparkles } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -128,7 +129,9 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
 // Poster Card with Proximity Brightness and Quick Actions
 const PosterCard: React.FC<{ drop: DropTitle; onOpen: () => void }> = ({ drop, onOpen }) => {
   const { isWatchlisted, toggleWatchlist } = useBugle();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const isSaved = isWatchlisted(drop.id);
+  const hasAlert = hasActiveRuleFor(drop.id);
 
   return (
     <div
@@ -181,6 +184,26 @@ const PosterCard: React.FC<{ drop: DropTitle; onOpen: () => void }> = ({ drop, o
             title="Remind me on drop"
           >
             {isSaved ? <Check className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openNotifyModal({
+                targetId: drop.id,
+                targetName: drop.name,
+                targetType: 'drop',
+                category: drop.category,
+                targetDate: drop.date
+              });
+            }}
+            className={`p-3 rounded-full transition-transform hover:scale-110 ${
+              hasAlert
+                ? 'bg-cyan-400 text-[#0b0d1a]'
+                : 'bg-[#171a30] text-cyan-300 border border-cyan-500/40'
+            }`}
+            title="Set custom notification"
+          >
+            <BellRing className="w-5 h-5" />
           </button>
         </div>
       </div>

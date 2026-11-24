@@ -45,7 +45,7 @@ export const ReminderCtaSection: React.FC = () => {
     if (isAudioDeskEnabled) {
       playBellChimeSound();
     }
-    showToast(`Tickora Alerts Activated for ${email}!`);
+    showToast(`AheadOfYou Alerts Activated for ${email}!`);
 
     confetti({
       particleCount: 80,

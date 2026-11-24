@@ -7,6 +7,7 @@ import { CustomCursor } from './CustomCursor';
 import { DropNavbar } from './DropNavbar';
 import { IntroSection } from './IntroSection';
 import { HeroCountdownSection } from './HeroCountdownSection';
+import { HollywoodBollywoodSection } from './HollywoodBollywoodSection';
 import { CategoryShowcaseSection } from './CategoryShowcaseSection';
 import { TimelineSection } from './TimelineSection';
 import { PosterGallerySection } from './PosterGallerySection';
@@ -19,24 +20,66 @@ import { DetailModal } from './DetailModal';
 import { WatchlistDrawer } from './WatchlistDrawer';
 import { LiveSyncModal } from './LiveSyncModal';
 import { UserUpdateModal } from './UserUpdateModal';
+import { SetNotificationModal } from './SetNotificationModal';
+import { NotificationsDrawer } from './NotificationsDrawer';
+import { ShareMovieModal } from './ShareMovieModal';
 import { Toast } from '../Toast';
 import { DropTitle } from '../../data/dropRadarData';
 import { playWhooshSound } from '../../utils/audio';
 import { useBugle } from '../../context/BugleContext';
+import { useDropData } from '../../context/DropDataContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
 export const DropRadarApp: React.FC = () => {
   const lenisRef = useRef<Lenis | null>(null);
+  const deepLinkHandledRef = useRef(false);
   const { isAudioDeskEnabled } = useBugle();
+  const { drops } = useDropData();
 
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
-  const [isLiveSyncOpen, setIsLiveSyncOpen] = useState(false);
+  const [isLiveSyncOpen, setIsLiveSyncOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('admin') === 'true';
+    }
+    return false;
+  });
   const [isUserUpdateModalOpen, setIsUserUpdateModalOpen] = useState(false);
   const [updateTarget, setUpdateTarget] = useState<{ id?: string; name?: string }>({});
   const [activeModalDrop, setActiveModalDrop] = useState<DropTitle | null>(null);
+  const [autoPlayTrailer, setAutoPlayTrailer] = useState(false);
+  const [shareMovieDrop, setShareMovieDrop] = useState<DropTitle | null>(null);
+
+  const openDropModal = (drop: DropTitle, playTrailer = false) => {
+    setAutoPlayTrailer(playTrailer);
+    setActiveModalDrop(drop);
+  };
+
+  // Support direct ?movie=<id> deep links from social sharing
+  useEffect(() => {
+    if (deepLinkHandledRef.current || typeof window === 'undefined' || !drops.length) return;
+    const movieId = new URLSearchParams(window.location.search).get('movie');
+    if (!movieId) return;
+
+    const matched = drops.find((d) => d.id === movieId);
+    if (matched) {
+      deepLinkHandledRef.current = true;
+      setAutoPlayTrailer(false);
+      setActiveModalDrop(matched);
+      window.setTimeout(() => {
+        const cinemaSection = document.getElementById('cinema-hub');
+        if (cinemaSection) {
+          if (lenisRef.current) {
+            lenisRef.current.scrollTo(cinemaSection, { offset: -60, duration: 1.0 });
+          } else {
+            cinemaSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      }, 150);
+    }
+  }, [drops]);
 
   // Initialize Lenis Smooth Scroll and connect to GSAP ScrollTrigger
   useEffect(() => {
@@ -110,7 +153,6 @@ export const DropRadarApp: React.FC = () => {
       <DropNavbar
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenWatchlist={() => setIsWatchlistOpen(true)}
-        onOpenLiveSync={() => setIsLiveSyncOpen(true)}
         onOpenUserUpdates={() => {
           setUpdateTarget({});
           setIsUserUpdateModalOpen(true);
@@ -126,19 +168,25 @@ export const DropRadarApp: React.FC = () => {
         <IntroSection onScrollNext={() => handleScrollToSection('hero-countdown')} />
 
         {/* 2. Hero Countdown Section (Pinned) */}
-        <HeroCountdownSection onOpenModal={(drop) => setActiveModalDrop(drop)} />
+        <HeroCountdownSection onOpenModal={(drop) => openDropModal(drop, false)} />
 
-        {/* 3. Category Showcase Section (Horizontal Scroll Pin) */}
+        {/* 3. Hollywood & Bollywood Cinema Hub */}
+        <HollywoodBollywoodSection
+          onOpenModal={openDropModal}
+          onShareMovie={(drop) => setShareMovieDrop(drop)}
+        />
+
+        {/* 4. Category Showcase Section (Horizontal Scroll Pin) */}
         <CategoryShowcaseSection
           onSelectCategory={(cat) => setSelectedCategory(cat)}
           onScrollToTimeline={() => handleScrollToSection('timeline')}
         />
 
-        {/* 4. This Week Timeline (Scroll-Linked) */}
-        <TimelineSection onOpenModal={(drop) => setActiveModalDrop(drop)} />
+        {/* 5. This Week Timeline (Scroll-Linked) */}
+        <TimelineSection onOpenModal={(drop) => openDropModal(drop, false)} />
 
-        {/* 5. Poster Parallax Gallery (3 Columns Asynchronous) */}
-        <PosterGallerySection onOpenModal={(drop) => setActiveModalDrop(drop)} />
+        {/* 6. Poster Parallax Gallery (3 Columns Asynchronous) */}
+        <PosterGallerySection onOpenModal={(drop) => openDropModal(drop, false)} />
 
         {/* 6. Stats Section (Telemetry Count-Up) */}
         <StatsSection />
@@ -160,22 +208,32 @@ export const DropRadarApp: React.FC = () => {
       <SearchModal
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        onSelectDrop={(drop) => setActiveModalDrop(drop)}
+        onSelectDrop={(drop) => openDropModal(drop, false)}
       />
 
       <DetailModal
         drop={activeModalDrop}
-        onClose={() => setActiveModalDrop(null)}
+        initialPlayTrailer={autoPlayTrailer}
+        onClose={() => {
+          setActiveModalDrop(null);
+          setAutoPlayTrailer(false);
+        }}
         onOpenUserUpdate={(id, name) => {
           setUpdateTarget({ id, name });
           setIsUserUpdateModalOpen(true);
         }}
+        onShareDrop={(drop) => setShareMovieDrop(drop)}
+      />
+
+      <ShareMovieModal
+        drop={shareMovieDrop}
+        onClose={() => setShareMovieDrop(null)}
       />
 
       <WatchlistDrawer
         isOpen={isWatchlistOpen}
         onClose={() => setIsWatchlistOpen(false)}
-        onSelectDrop={(drop) => setActiveModalDrop(drop)}
+        onSelectDrop={(drop) => openDropModal(drop, false)}
       />
 
       <LiveSyncModal
@@ -189,6 +247,9 @@ export const DropRadarApp: React.FC = () => {
         preselectedTitleId={updateTarget.id}
         preselectedTitleName={updateTarget.name}
       />
+
+      <SetNotificationModal />
+      <NotificationsDrawer />
 
       {/* Toast Notification Container */}
       <Toast />

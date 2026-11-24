@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Calendar, ArrowRight, Film, Sparkles, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
+import { Search, X, Calendar, ArrowRight, BellRing } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface SearchModalProps {
 
 export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSelectDrop }) => {
   const { drops } = useDropData();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -55,8 +57,10 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSel
     return (
       drop.name.toLowerCase().includes(q) ||
       drop.category.toLowerCase().includes(q) ||
+      (drop.industry || '').toLowerCase().includes(q) ||
       drop.platform.toLowerCase().includes(q) ||
-      drop.tagline.toLowerCase().includes(q)
+      drop.tagline.toLowerCase().includes(q) ||
+      (drop.trustedSourceLabel || '').toLowerCase().includes(q)
     );
   });
 
@@ -127,6 +131,17 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSel
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-[#0b0d1a] text-cyan-400 border border-[#252846]">
                           {drop.category}
                         </span>
+                        {drop.industry && (
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider border ${
+                              drop.industry === 'Bollywood'
+                                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                                : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                            }`}
+                          >
+                            {drop.industry}
+                          </span>
+                        )}
                         <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {drop.date}
@@ -141,10 +156,31 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSel
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 pl-3 flex-shrink-0">
+                  <div className="flex items-center gap-2.5 pl-3 flex-shrink-0">
                     <span className="text-xs font-mono font-bold text-[#ff3d71] hidden sm:inline">
                       T-{drop.daysRemaining}D
                     </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClose();
+                        openNotifyModal({
+                          targetId: drop.id,
+                          targetName: drop.name,
+                          targetType: 'drop',
+                          category: drop.category,
+                          targetDate: drop.date
+                        });
+                      }}
+                      className={`p-2 rounded-xl border transition-colors ${
+                        hasActiveRuleFor(drop.id)
+                          ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                          : 'bg-[#171a30] border-[#2b3052] text-slate-300 hover:text-cyan-300 hover:border-cyan-400'
+                      }`}
+                      title="Set notification for this drop"
+                    >
+                      <BellRing className="w-4 h-4" />
+                    </button>
                     <ArrowRight className="w-4 h-4 text-cyan-400" />
                   </div>
                 </div>

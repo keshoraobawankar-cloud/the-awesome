@@ -6,12 +6,17 @@ interface FeedSource {
 }
 
 const PUBLIC_FEEDS: FeedSource[] = [
+  { name: 'Deadline Hollywood', url: 'https://deadline.com/feed/' },
+  { name: 'Bollywood Hungama', url: 'https://www.bollywoodhungama.com/rss/news.xml' },
+  { name: 'Variety', url: 'https://variety.com/feed/' },
   { name: 'Anime News Network', url: 'https://www.animenewsnetwork.com/all/rss.xml' },
   { name: 'Polygon', url: 'https://www.polygon.com/rss/index.xml' }
 ];
 
-function extractTag(title: string): string {
+function extractTag(title: string, sourceName: string): string {
   const lower = title.toLowerCase();
+  if (sourceName.toLowerCase().includes('bollywood') || lower.includes('bollywood') || lower.includes('salman') || lower.includes('shah rukh') || lower.includes('ranbir')) return 'BOLLYWOOD';
+  if (sourceName.toLowerCase().includes('deadline') || sourceName.toLowerCase().includes('variety')) return 'HOLLYWOOD';
   if (lower.includes('anime') || lower.includes('manga') || lower.includes('season')) return 'ANIME';
   if (lower.includes('game') || lower.includes('playstation') || lower.includes('xbox') || lower.includes('nintendo') || lower.includes('gta')) return 'GAMING';
   if (lower.includes('movie') || lower.includes('trailer') || lower.includes('film') || lower.includes('box office')) return 'FILM';
@@ -25,7 +30,7 @@ function parseRssXml(xml: string, sourceName: string): StackingNewsCard[] {
   let match;
   let count = 0;
 
-  while ((match = itemRegex.exec(xml)) !== null && count < 3) {
+  while ((match = itemRegex.exec(xml)) !== null && count < 2) {
     count++;
     const itemContent = match[1];
     const titleMatch = /<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/i.exec(itemContent);
@@ -39,7 +44,7 @@ function parseRssXml(xml: string, sourceName: string): StackingNewsCard[] {
     if (rawDesc.length > 200) rawDesc = rawDesc.substring(0, 197) + '...';
 
     const cleanTitle = title.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
-    const tag = extractTag(cleanTitle);
+    const tag = extractTag(cleanTitle, sourceName);
 
     const gradients = [
       'from-[#ff3d71]/20 via-[#171a30] to-[#0b0d1a]',

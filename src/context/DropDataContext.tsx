@@ -17,6 +17,14 @@ interface DropDataContextType {
   isSyncing: boolean;
   lastSyncedAt: string | null;
   triggerSync: () => Promise<void>;
+  updateSyncConfig: (autoSyncEnabled: boolean, syncIntervalMinutes?: number) => Promise<void>;
+  resolveOfficialTrailer: (id: string) => Promise<{
+    success: boolean;
+    trailerUrl?: string;
+    trailerEmbedUrl?: string;
+    trailerSource?: string;
+  }>;
+  attachOfficialTrailer: (id: string, trailerUrl: string) => Promise<boolean>;
   addManualDrop: (dropData: {
     name: string;
     category: 'Movies' | 'Anime' | 'Games' | 'Dramas' | 'Books' | 'Manga';
@@ -24,6 +32,7 @@ interface DropDataContextType {
     platform: string;
     description: string;
     tagline?: string;
+    trailerUrl?: string;
     status: 'Confirmed' | 'Tentative' | 'Delayed';
     lockField: boolean;
   }) => Promise<boolean>;
@@ -174,13 +183,44 @@ export const DropDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     refreshAll();
+
+    // Real-time Server-Sent Events stream for instant auto-updates when backend syncs or updates
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/stream');
+      eventSource.onmessage = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.data);
+          if (parsed?.type && parsed.type !== 'connected') {
+            refreshAll();
+          }
+        } catch {
+          // ignore malformed SSE chunk
+        }
+      };
+    } catch {
+      // Fallback to polling if EventSource is unavailable
+    }
+
+    // Periodic full auto-refresh fallback every 30s (drops, news, queue, history, updates, status)
     const interval = setInterval(() => {
-      fetchSyncStatus();
-      fetchNewsQueue();
-      fetchUserUpdates();
+      refreshAll();
     }, 30000);
-    return () => clearInterval(interval);
-  }, [refreshAll, fetchSyncStatus, fetchNewsQueue, fetchUserUpdates]);
+
+    // Refresh immediately when user returns to tab
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAll();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [refreshAll]);
 
   // Trigger immediate live sync
   const triggerSync = async () => {
@@ -197,6 +237,58 @@ export const DropDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   };
 
+  // Update backend auto-sync toggle & interval
+  const updateSyncConfig = async (autoSyncEnabled: boolean, syncIntervalMinutes?: number) => {
+    try {
+      const res = await fetch('/api/sync/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoSyncEnabled, syncIntervalMinutes })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status) setSyncStatus(data.status);
+      }
+    } catch (err) {
+      console.warn('Failed to update sync config:', err);
+    }
+  };
+
+  // Resolve official trailer from AniList / TMDB
+  const resolveOfficialTrailer = async (id: string) => {
+    try {
+      const res = await fetch(`/api/drops/${encodeURIComponent(id)}/trailer`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          await fetchDrops();
+        }
+        return data;
+      }
+    } catch {
+      // ignore
+    }
+    return { success: false };
+  };
+
+  // Attach/update an official trailer URL
+  const attachOfficialTrailer = async (id: string, trailerUrl: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/drops/${encodeURIComponent(id)}/trailer`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trailerUrl })
+      });
+      if (res.ok) {
+        await fetchDrops();
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
   // Add manual drop entry
   const addManualDrop = async (dropData: {
     name: string;
@@ -205,6 +297,7 @@ export const DropDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     platform: string;
     description: string;
     tagline?: string;
+    trailerUrl?: string;
     status: 'Confirmed' | 'Tentative' | 'Delayed';
     lockField: boolean;
   }): Promise<boolean> => {
@@ -426,6 +519,9 @@ export const DropDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isSyncing,
         lastSyncedAt,
         triggerSync,
+        updateSyncConfig,
+        resolveOfficialTrailer,
+        attachOfficialTrailer,
         addManualDrop,
         updateDropStatus,
         updateDropDate,

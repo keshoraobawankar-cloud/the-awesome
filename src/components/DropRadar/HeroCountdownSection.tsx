@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Bell, Check, Play, Calendar, ExternalLink, Sparkles, Flame } from 'lucide-react';
+import { Bell, BellRing, Check, Play, Calendar, ExternalLink, Sparkles, Flame } from 'lucide-react';
 import { HERO_FEATURED_DROP, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import confetti from 'canvas-confetti';
@@ -24,7 +25,9 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
   const currentDrop = heroDrop || HERO_FEATURED_DROP;
 
   const { isWatchlisted, toggleWatchlist } = useBugle();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const isSaved = isWatchlisted(currentDrop.id);
+  const hasAlert = hasActiveRuleFor(currentDrop.id);
 
   // Live countdown state
   const targetDate = new Date(currentDrop.date).getTime() || new Date('2026-11-19T00:00:00Z').getTime();
@@ -212,6 +215,26 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
           </button>
 
           <button
+            onClick={() =>
+              openNotifyModal({
+                targetId: currentDrop.id,
+                targetName: currentDrop.name,
+                targetType: 'drop',
+                category: currentDrop.category,
+                targetDate: currentDrop.date
+              })
+            }
+            className={`px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl border font-inter font-semibold text-sm sm:text-base flex items-center gap-2 transition-all ${
+              hasAlert
+                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200 shadow-[0_0_15px_rgba(34,211,238,0.25)]'
+                : 'bg-[#171a30] hover:bg-[#202444] border-[#2b3052] text-white hover:border-cyan-400'
+            }`}
+          >
+            <BellRing className="w-4 h-4 text-cyan-400" />
+            <span>{hasAlert ? 'Alert Configured' : 'Set Notification'}</span>
+          </button>
+
+          <button
             onClick={() => onOpenModal(currentDrop)}
             className="px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-white font-inter font-semibold text-sm sm:text-base flex items-center gap-2 transition-all hover:border-cyan-400 group"
           >
@@ -227,7 +250,7 @@ export const HeroCountdownSection: React.FC<HeroCountdownSectionProps> = ({ onOp
             Launch Date: {currentDrop.date}
           </span>
           <span>•</span>
-          <span>Verified by Tickora Desk</span>
+          <span>Verified by AheadOfYou Desk</span>
         </div>
       </div>
     </section>

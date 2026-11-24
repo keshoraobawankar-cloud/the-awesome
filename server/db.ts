@@ -16,10 +16,28 @@ class DatabaseStore {
   private userUpdates: UserUpdateSubmission[] = [];
   private lastSyncTime: string | null = null;
   private isSyncing = false;
+  private autoSyncEnabled = true;
+  private syncIntervalMinutes = 5;
+  private nextScheduledSync: string = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  private dataVersion = 1;
+  private listeners: Set<(event: { type: string; version: number; timestamp: string }) => void> = new Set();
   private logs: Array<{ timestamp: string; level: 'info' | 'warn' | 'success' | 'error'; message: string }> = [];
+  private sharePreviewPngs: Map<string, Buffer> = new Map();
 
   constructor() {
     this.seedInitialData();
+  }
+
+  public saveSharePreviewPng(id: string, buf: Buffer) {
+    if (this.sharePreviewPngs.size >= 50) {
+      const oldestKey = this.sharePreviewPngs.keys().next().value;
+      if (oldestKey) this.sharePreviewPngs.delete(oldestKey);
+    }
+    this.sharePreviewPngs.set(id, buf);
+  }
+
+  public getSharePreviewPng(id: string): Buffer | undefined {
+    return this.sharePreviewPngs.get(id);
   }
 
   private seedInitialData() {
@@ -115,7 +133,7 @@ class DatabaseStore {
     // Seed timeline
     this.timeline = [...THIS_WEEK_TIMELINE];
 
-    this.addLog('info', 'Tickora database initialized with releases, news approval queue & community updates tip line.');
+    this.addLog('info', 'AheadOfYou database initialized with releases, news approval queue & community updates tip line.');
   }
 
   public getDrops(): DropTitle[] {
@@ -214,6 +232,12 @@ class DatabaseStore {
       this.drops.set(drop.id, {
         ...existing,
         ...drop,
+        image: drop.image || existing.image,
+        trailerUrl: drop.trailerUrl || existing.trailerUrl,
+        trailerEmbedUrl: drop.trailerEmbedUrl || existing.trailerEmbedUrl,
+        trailerSource: drop.trailerSource || existing.trailerSource,
+        industry: drop.industry || existing.industry,
+        trustedSourceLabel: drop.trustedSourceLabel || existing.trustedSourceLabel,
         locked: existing.locked || drop.locked,
         updatedAt: new Date().toISOString()
       });
@@ -249,6 +273,17 @@ class DatabaseStore {
 
   public setNews(newsList: StackingNewsCard[]) {
     this.news = newsList;
+    this.notifyChange('news_updated');
+  }
+
+  public mergeLiveNews(newsList: StackingNewsCard[]) {
+    const preserved = this.news.filter(
+      (n) => n.id.startsWith('approved-') || n.id.startsWith('news-applied-') || n.id.startsWith('news-new-drop-')
+    );
+    const seenTitles = new Set(preserved.map((n) => n.title.toLowerCase()));
+    const fresh = newsList.filter((n) => !seenTitles.has(n.title.toLowerCase()));
+    this.news = [...preserved, ...fresh].slice(0, 12);
+    this.notifyChange('news_updated');
   }
 
   // News Approval Workflow
@@ -366,7 +401,7 @@ class DatabaseStore {
       title: `Community Tip: ${newSubmission.targetTitleName}`,
       originalHeadline: `${newSubmission.updateType.toUpperCase().replace('_', ' ')}: ${newSubmission.details}`,
       summary: `Tip submitted by community member ${newSubmission.submittedBy}: ${newSubmission.details}${newSubmission.suggestedDate ? ` Target date: ${newSubmission.suggestedDate}.` : ''}`,
-      source: `TICKORA COMMUNITY TIP LINE`,
+      source: `AHEADOFYOU COMMUNITY TIP LINE`,
       sourceUrl: newSubmission.sourceUrl,
       category: newSubmission.category,
       status: 'pending_review',
@@ -427,7 +462,7 @@ class DatabaseStore {
         kicker: 'COMMUNITY VERIFIED DROP UPDATE',
         title: `${target.name}: Schedule Updated to ${target.date}`,
         deck: `Reader scoop confirmed: ${update.details}. Broadcasted to all tracking desks.`,
-        source: `Tickora Community Wire (${update.submittedBy})`,
+        source: `AheadOfYou Community Wire (${update.submittedBy})`,
         readTime: '1 MIN READ',
         date: 'Just now',
         gradient: 'from-[#22d3ee]/30 via-[#171a30] to-[#0b0d1a]',
@@ -464,7 +499,7 @@ class DatabaseStore {
         id: `news-new-drop-${Date.now()}`,
         kicker: 'NEW RELEASE ADDED VIA COMMUNITY',
         title: `Announced: ${newDrop.name}`,
-        deck: `${update.details} Subscribed to Tickora countdown radar.`,
+        deck: `${update.details} Subscribed to AheadOfYou countdown radar.`,
         source: `Community Dispatch (${update.submittedBy})`,
         readTime: '1 MIN READ',
         date: 'Just now',
@@ -473,7 +508,7 @@ class DatabaseStore {
       });
 
       this.addLog('success', `Cataloged new community-submitted release: "${newDrop.name}".`);
-      return { success: true, appliedTitle: newDrop, message: `Added new release "${newDrop.name}" to live Tickora radar!` };
+      return { success: true, appliedTitle: newDrop, message: `Added new release "${newDrop.name}" to live AheadOfYou radar!` };
     }
   }
 
@@ -503,10 +538,65 @@ class DatabaseStore {
     }
   }
 
+  public subscribe(listener: (event: { type: string; version: number; timestamp: string }) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  public notifyChange(type: string) {
+    this.dataVersion += 1;
+    const payload = {
+      type,
+      version: this.dataVersion,
+      timestamp: new Date().toISOString()
+    };
+    this.listeners.forEach((listener) => {
+      try {
+        listener(payload);
+      } catch {
+        // ignore closed stream listeners
+      }
+    });
+  }
+
+  public getDataVersion(): number {
+    return this.dataVersion;
+  }
+
+  public getSyncConfig(): { autoSyncEnabled: boolean; syncIntervalMinutes: number } {
+    return {
+      autoSyncEnabled: this.autoSyncEnabled,
+      syncIntervalMinutes: this.syncIntervalMinutes
+    };
+  }
+
+  public setSyncConfig(enabled?: boolean, intervalMinutes?: number) {
+    if (typeof enabled === 'boolean') {
+      this.autoSyncEnabled = enabled;
+    }
+    if (typeof intervalMinutes === 'number' && !isNaN(intervalMinutes)) {
+      this.syncIntervalMinutes = Math.min(60, Math.max(1, Math.round(intervalMinutes)));
+    }
+    this.nextScheduledSync = new Date(Date.now() + this.syncIntervalMinutes * 60 * 1000).toISOString();
+    this.addLog(
+      'info',
+      `Auto-update ${this.autoSyncEnabled ? `ENABLED (every ${this.syncIntervalMinutes}m)` : 'PAUSED'}.`
+    );
+    this.notifyChange('sync_config');
+  }
+
+  public setNextScheduledSync(isoDate: string) {
+    this.nextScheduledSync = isoDate;
+  }
+
   public setSyncState(syncing: boolean) {
     this.isSyncing = syncing;
     if (!syncing) {
       this.lastSyncTime = new Date().toISOString();
+      this.nextScheduledSync = new Date(Date.now() + this.syncIntervalMinutes * 60 * 1000).toISOString();
+      this.notifyChange('sync_completed');
     }
   }
 
@@ -514,13 +604,14 @@ class DatabaseStore {
     const dropsArray = Array.from(this.drops.values());
     const lockedCount = dropsArray.filter(d => d.locked).length;
     const pendingCount = this.newsApprovalQueue.filter(n => n.status === 'pending_review').length;
-    const nextSync = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     return {
       lastSyncTime: this.lastSyncTime,
-      nextScheduledSync: nextSync,
+      nextScheduledSync: this.nextScheduledSync,
       isSyncing: this.isSyncing,
-      autoSyncEnabled: true,
+      autoSyncEnabled: this.autoSyncEnabled,
+      syncIntervalMinutes: this.syncIntervalMinutes,
+      dataVersion: this.dataVersion,
       totalDrops: dropsArray.length,
       totalNews: this.news.length,
       lockedDropsCount: lockedCount,
@@ -542,6 +633,15 @@ class DatabaseStore {
           status: 'online',
           itemCount: dropsArray.filter(d => d.source === 'openlibrary').length,
           description: 'Official API for trending books, authors, and cover art.',
+          isKeyRequired: false,
+          hasKey: true
+        },
+        {
+          name: 'Wikipedia & Wikidata Cinema',
+          id: 'wikipedia',
+          status: 'online',
+          itemCount: dropsArray.filter(d => d.source === 'wikipedia' || d.industry).length,
+          description: 'Trusted public release registries for Hollywood & Bollywood upcoming cinema.',
           isKeyRequired: false,
           hasKey: true
         },

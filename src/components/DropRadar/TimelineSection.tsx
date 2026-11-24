@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
-import { Calendar, Clock, Bell, Check, Film, Sparkles, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Calendar, Clock, Bell, BellRing, Check, Film, Sparkles, Gamepad2, Tv, BookOpen, Layers } from 'lucide-react';
 import { THIS_WEEK_TIMELINE, TimelineDrop, DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import confetti from 'canvas-confetti';
@@ -20,7 +21,25 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
 
   const { isWatchlisted, toggleWatchlist } = useBugle();
   const { drops } = useDropData();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
   const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
+
+  const timelineItems = useMemo(() => {
+    return THIS_WEEK_TIMELINE.map((item) => {
+      const liveMatch = allDrops.find(
+        (d) =>
+          d.id === item.id ||
+          d.name.toLowerCase().includes(item.title.toLowerCase().slice(0, 10))
+      );
+      if (!liveMatch) return item;
+      return {
+        ...item,
+        dateStr: liveMatch.date || item.dateStr,
+        status: liveMatch.status || item.status,
+        platform: liveMatch.platform || item.platform
+      };
+    });
+  }, [allDrops]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -151,7 +170,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
 
           {/* Timeline Cards */}
           <div className="space-y-12 sm:space-y-16">
-            {THIS_WEEK_TIMELINE.map((drop, idx) => {
+            {timelineItems.map((drop, idx) => {
               const isLeft = idx % 2 === 0;
               const isReminded = isWatchlisted(drop.id);
               const matchingDrop = findMatchingDrop(drop);
@@ -236,6 +255,29 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
                           )}
                           <span className="text-[11px] font-mono">
                             {isReminded ? 'Saved' : 'Remind'}
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openNotifyModal({
+                              targetId: matchingDrop.id,
+                              targetName: drop.title,
+                              targetType: 'drop',
+                              category: drop.category,
+                              targetDate: matchingDrop.date
+                            });
+                          }}
+                          className={`p-1.5 rounded-lg border text-xs font-inter flex items-center gap-1 transition-all ${
+                            hasActiveRuleFor(matchingDrop.id)
+                              ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400'
+                              : 'bg-[#171a30] text-cyan-300 border-[#2b3052] hover:text-white hover:border-cyan-400'
+                          }`}
+                          title="Set custom notification for this drop"
+                        >
+                          <BellRing className="w-4 h-4" />
+                          <span className="text-[11px] font-mono">
+                            {hasActiveRuleFor(matchingDrop.id) ? 'Alert On' : 'Notify'}
                           </span>
                         </button>
                       </div>

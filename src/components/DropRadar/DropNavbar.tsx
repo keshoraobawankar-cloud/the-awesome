@@ -1,11 +1,11 @@
 import React from 'react';
-import { Search, Bell, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, Radio, PlusCircle } from 'lucide-react';
+import { Search, Bell, BellRing, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, PlusCircle, Clapperboard } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface DropNavbarProps {
   onOpenSearch: () => void;
   onOpenWatchlist: () => void;
-  onOpenLiveSync?: () => void;
   onOpenUserUpdates?: () => void;
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
@@ -15,13 +15,14 @@ interface DropNavbarProps {
 export const DropNavbar: React.FC<DropNavbarProps> = ({
   onOpenSearch,
   onOpenWatchlist,
-  onOpenLiveSync,
   onOpenUserUpdates,
   selectedCategory,
   onSelectCategory,
   onScrollToSection
 }) => {
   const { watchlistIds } = useBugle();
+  const { rules, unreadCount, setIsDrawerOpen } = useNotifications();
+  const activeAlertsCount = rules.filter((r) => r.enabled).length;
 
   const categories = [
     { label: 'All', icon: Layers, id: 'all' },
@@ -41,7 +42,7 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
           <button
             onClick={() => onScrollToSection('intro')}
             className="flex items-center gap-3 group text-left focus:outline-none"
-            aria-label="Tickora Home"
+            aria-label="AheadOfYou Home"
           >
             <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] p-[2px] shadow-[0_0_15px_rgba(139,92,246,0.4)] group-hover:shadow-[0_0_25px_rgba(34,211,238,0.6)] transition-all">
               <div className="w-full h-full bg-[#0b0d1a] rounded-[10px] flex items-center justify-center">
@@ -53,7 +54,7 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
             </div>
             <div>
               <span className="font-bebas text-2xl sm:text-3xl tracking-wider text-white">
-                TICK<span className="text-[#22d3ee]">ORA</span>
+                AHEAD<span className="text-[#22d3ee]">OFYOU</span>
               </span>
             </div>
           </button>
@@ -81,6 +82,17 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
                 </button>
               );
             })}
+            <button
+              onClick={() => {
+                onSelectCategory('Movies');
+                onScrollToSection('cinema-hub');
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-inter font-semibold text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all"
+              title="Jump to Hollywood & Bollywood Movies"
+            >
+              <Clapperboard className="w-3.5 h-3.5 text-amber-400" />
+              <span>Cinema Hub</span>
+            </button>
           </nav>
 
           {/* Right Action Tools */}
@@ -98,22 +110,6 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
               </button>
             )}
 
-            {/* Live Sync Engine Badge Button */}
-            {onOpenLiveSync && (
-              <button
-                onClick={onOpenLiveSync}
-                className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-slate-300 hover:text-white text-xs font-inter transition-all group"
-                title="Open Live Radar Data Engine & Sync Status"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <Radio className="w-3.5 h-3.5 text-emerald-400 hidden xs:inline" />
-                <span className="hidden md:inline text-xs font-mono font-medium text-emerald-400">LIVE SYNC</span>
-              </button>
-            )}
-
             {/* Search Button with Cmd+K hint */}
             <button
               onClick={onOpenSearch}
@@ -127,6 +123,26 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
               </kbd>
             </button>
 
+
+            {/* Notification Center Button */}
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="relative p-2 sm:px-3 sm:py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-cyan-500/40 text-cyan-300 hover:text-white text-xs sm:text-sm font-inter font-semibold transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(34,211,238,0.18)]"
+              aria-label="Open Notification Center"
+              title="Set & manage notifications for any release, category, or news"
+            >
+              <BellRing className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Alerts</span>
+              {(unreadCount > 0 || activeAlertsCount > 0) && (
+                <span
+                  className={`inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold rounded-full ml-0.5 ${
+                    unreadCount > 0 ? 'bg-[#ff3d71] text-white' : 'bg-cyan-400 text-[#0b0d1a]'
+                  }`}
+                >
+                  {unreadCount > 0 ? unreadCount : activeAlertsCount}
+                </span>
+              )}
+            </button>
 
             {/* Watchlist Drawer Button */}
             <button
@@ -147,6 +163,16 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
 
         {/* Mobile Horizontal Category Bar */}
         <div className="lg:hidden flex items-center gap-1 overflow-x-auto py-2 -mx-4 px-4 scrollbar-none border-t border-[#252846]/40">
+          <button
+            onClick={() => {
+              onSelectCategory('Movies');
+              onScrollToSection('cinema-hub');
+            }}
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-inter font-semibold text-amber-300 bg-amber-500/15 border border-amber-500/30"
+          >
+            <Clapperboard className="w-3 h-3 text-amber-400" />
+            <span>Hollywood & Bollywood</span>
+          </button>
           {categories.map((cat) => {
             const isActive = selectedCategory === cat.label;
             const Icon = cat.icon;

@@ -1,13 +1,15 @@
 import React, { useRef } from 'react';
-import { Newspaper, Bookmark, Check, ArrowUpRight, Flame, Clock } from 'lucide-react';
+import { Newspaper, Bookmark, Check, ArrowUpRight, Flame, Clock, BellRing } from 'lucide-react';
 import { STACKING_NEWS, StackingNewsCard, TICKER_HEADLINES } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { playBundleThudSound } from '../../utils/audio';
 
 export const NewsStackSection: React.FC = () => {
   const { savedStoryIds, toggleSave, isSaved, isAudioDeskEnabled } = useBugle();
   const { news } = useDropData();
+  const { hasActiveRuleFor, openNotifyModal } = useNotifications();
 
   const currentNews = (news && news.length > 0) ? news : STACKING_NEWS;
   const activeHeadlines = [
@@ -90,27 +92,51 @@ export const NewsStackSection: React.FC = () => {
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => toggleSave(card.id)}
-                      className={`p-2 rounded-xl border text-xs font-inter flex items-center gap-1.5 transition-all ${
-                        isBookmarked
-                          ? 'bg-emerald-600 text-white border-emerald-500'
-                          : 'bg-[#171a30] text-slate-400 border-[#2b3052] hover:text-white hover:border-cyan-400'
-                      }`}
-                      title={isBookmarked ? 'Saved to Archive' : 'Save Story'}
-                    >
-                      {isBookmarked ? (
-                        <>
-                          <Check className="w-4 h-4 text-white" />
-                          <span className="hidden sm:inline font-mono">Archived</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="w-4 h-4" />
-                          <span className="hidden sm:inline font-mono">Save Scoop</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          openNotifyModal({
+                            targetId: card.id,
+                            targetName: card.title,
+                            targetType: 'news',
+                            category: card.tag
+                          })
+                        }
+                        className={`p-2 rounded-xl border text-xs font-inter flex items-center gap-1.5 transition-all ${
+                          hasActiveRuleFor(card.id)
+                            ? 'bg-cyan-500/20 text-cyan-200 border-cyan-400'
+                            : 'bg-[#171a30] text-cyan-300 border-[#2b3052] hover:text-white hover:border-cyan-400'
+                        }`}
+                        title="Set notification for updates on this story"
+                      >
+                        <BellRing className="w-4 h-4" />
+                        <span className="hidden sm:inline font-mono">
+                          {hasActiveRuleFor(card.id) ? 'Alert On' : 'Notify'}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => toggleSave(card.id)}
+                        className={`p-2 rounded-xl border text-xs font-inter flex items-center gap-1.5 transition-all ${
+                          isBookmarked
+                            ? 'bg-emerald-600 text-white border-emerald-500'
+                            : 'bg-[#171a30] text-slate-400 border-[#2b3052] hover:text-white hover:border-cyan-400'
+                        }`}
+                        title={isBookmarked ? 'Saved to Archive' : 'Save Story'}
+                      >
+                        {isBookmarked ? (
+                          <>
+                            <Check className="w-4 h-4 text-white" />
+                            <span className="hidden sm:inline font-mono">Archived</span>
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark className="w-4 h-4" />
+                            <span className="hidden sm:inline font-mono">Save Scoop</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Headline */}

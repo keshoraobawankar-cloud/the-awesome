@@ -16,7 +16,8 @@ export const LiveSyncModal: React.FC<LiveSyncModalProps> = ({ isOpen, onClose })
   const { 
     syncStatus, 
     isSyncing, 
-    triggerSync, 
+    triggerSync,
+    updateSyncConfig,
     addManualDrop, 
     lastSyncedAt,
     drops,
@@ -36,6 +37,7 @@ export const LiveSyncModal: React.FC<LiveSyncModalProps> = ({ isOpen, onClose })
     date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     platform: '',
     tagline: '',
+    trailerUrl: '',
     description: '',
     status: 'Confirmed' as 'Confirmed' | 'Tentative' | 'Delayed',
     lockField: true
@@ -75,6 +77,7 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
           date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           platform: '',
           tagline: '',
+          trailerUrl: '',
           description: '',
           status: 'Confirmed',
           lockField: true
@@ -243,7 +246,9 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
                     {timeAgo(lastSyncedAt)}
                   </div>
                   <span className="text-[11px] text-slate-400">
-                    Auto-runs every 15m
+                    {syncStatus?.autoSyncEnabled !== false
+                      ? `Auto-runs every ${syncStatus?.syncIntervalMinutes ?? 5}m`
+                      : 'Auto-Sync Paused'}
                   </span>
                 </div>
 
@@ -269,6 +274,48 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
                   <span className="text-[11px] text-slate-400 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-[#ff3d71]" /> Overwrite Protected
                   </span>
+                </div>
+              </div>
+
+              {/* Auto-Update Schedule Controls */}
+              <div className="bg-[#151930] border border-[#272c4e] rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-mono font-semibold text-white uppercase tracking-wider block">
+                    Background Auto-Update Scheduler
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-inter">
+                    Automatically refreshes AniList, TMDB, OpenLibrary & RSS feeds and streams updates live to clients.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {[1, 5, 15, 30].map((mins) => {
+                    const active = (syncStatus?.syncIntervalMinutes ?? 5) === mins;
+                    return (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => updateSyncConfig(true, mins)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-mono border transition-all ${
+                          active
+                            ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold'
+                            : 'bg-[#0b0d1a] border-[#252846] text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {mins}m
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => updateSyncConfig(!(syncStatus?.autoSyncEnabled ?? true), syncStatus?.syncIntervalMinutes ?? 5)}
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-bold border transition-all ${
+                      syncStatus?.autoSyncEnabled !== false
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                        : 'bg-rose-500/20 border-rose-500/50 text-rose-300'
+                    }`}
+                  >
+                    {syncStatus?.autoSyncEnabled !== false ? 'AUTO ON' : 'PAUSED'}
+                  </button>
                 </div>
               </div>
 
@@ -450,7 +497,7 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
                 }`}>
                   <div className="font-bold font-inter flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>Successfully imported {sheetsFeedback.added} titles into Tickora!</span>
+                    <span>Successfully imported {sheetsFeedback.added} titles into AheadOfYou!</span>
                   </div>
                   {sheetsFeedback.errors.length > 0 && (
                     <div className="mt-2 text-slate-300 space-y-0.5">
@@ -509,7 +556,7 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
                     <Check className="w-6 h-6" />
                   </div>
                   <h5 className="font-bebas text-xl text-white">Release Successfully Cataloged!</h5>
-                  <p className="text-xs text-slate-300">Added to Tickora with field-lock protection active.</p>
+                  <p className="text-xs text-slate-300">Added to AheadOfYou with field-lock protection active.</p>
                 </div>
               ) : (
                 <form onSubmit={handleManualSubmit} className="space-y-4">
@@ -601,6 +648,19 @@ Wolverine (PS5),Games,2027-04-16,PlayStation 5,Tentative,Insomniac Games standal
                         className="w-full px-3 py-2 bg-[#171a30] border border-[#2b3052] rounded-xl text-sm text-white focus:outline-none focus:border-[#ff3d71]"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono uppercase text-slate-400 mb-1">
+                      Official Trailer URL (YouTube, Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.trailerUrl}
+                      onChange={(e) => setFormData({ ...formData, trailerUrl: e.target.value })}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="w-full px-3 py-2 bg-[#171a30] border border-[#2b3052] rounded-xl text-sm text-white focus:outline-none focus:border-[#ff3d71]"
+                    />
                   </div>
 
                   <div>

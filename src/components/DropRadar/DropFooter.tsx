@@ -20,7 +20,7 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
                 </div>
               </div>
               <span className="font-bebas text-2xl text-white tracking-wider">
-                TICK<span className="text-[#22d3ee]">ORA</span>
+                AHEAD<span className="text-[#22d3ee]">OFYOU</span>
               </span>
             </div>
 
@@ -30,7 +30,7 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
 
             <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>TICKORA SYSTEM ONLINE</span>
+              <span>AHEADOFYOU SYSTEM ONLINE</span>
             </div>
           </div>
 
@@ -65,6 +65,14 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
                   className="hover:text-white transition-colors"
                 >
                   Hero Countdown Clock
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onScrollToSection('cinema-hub')}
+                  className="hover:text-white transition-colors"
+                >
+                  Hollywood & Bollywood Movies
                 </button>
               </li>
               <li>
@@ -128,7 +136,7 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
         {/* Bottom Bar & Legal Attributions */}
         <div className="pt-8 border-t border-[#252846]/60 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500">
           <div className="space-y-1 text-center md:text-left">
-            <p>© 2026 Tickora. Built with live countdown telemetry.</p>
+            <p>© 2026 AheadOfYou. Built with live countdown telemetry.</p>
             <p className="text-[11px] text-slate-500">
               This product uses the TMDB API but is not endorsed or certified by TMDB. Anime & manga metadata powered by AniList GraphQL.
             </p>
@@ -136,7 +144,7 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
           <div className="flex items-center gap-4 text-slate-400">
             <span>Powered by GSAP + Lenis + Motion</span>
             <span>•</span>
-            <span className="text-cyan-400">Real-Time Sync Engine</span>
+            <span className="text-cyan-400">Live Release Countdowns</span>
           </div>
         </div>
       </div>

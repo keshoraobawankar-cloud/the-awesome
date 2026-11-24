@@ -111,7 +111,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
 
     if (res.success) {
       setSubmitSuccess(true);
-      showToast('Tip submitted to Tickora Community Feed! Thank you!');
+      showToast('Tip submitted to AheadOfYou Community Feed! Thank you!');
       confetti({
         particleCount: 70,
         spread: 60,
@@ -143,7 +143,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
     const res = await applyUserUpdate(id);
     setApplyingId(null);
     if (res.success) {
-      showToast(res.message || 'Update merged into live Tickora release catalog!');
+      showToast(res.message || 'Update merged into live AheadOfYou release catalog!');
       confetti({
         particleCount: 90,
         spread: 70,
@@ -187,7 +187,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-bebas text-xl sm:text-2xl text-white tracking-wide">
-                  TICKORA COMMUNITY TIP LINE
+                  AHEADOFYOU COMMUNITY TIP LINE
                 </h3>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                   LIVE USER UPDATES
@@ -247,7 +247,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
                   </div>
                   <h4 className="font-bebas text-2xl text-white">Update Successfully Received!</h4>
                   <p className="text-sm text-slate-300 max-w-md mx-auto">
-                    Your tip has been registered on the Tickora Community Wire and is now live for community confirmation and editorial merge.
+                    Your tip has been registered on the AheadOfYou Community Wire and is now live for community confirmation and editorial merge.
                   </p>
                 </div>
               ) : (
@@ -439,7 +439,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
                 <div>
                   <h4 className="font-bebas text-lg text-white">Community Submitted Updates</h4>
                   <p className="text-xs text-slate-400">
-                    Upvote valid updates to confirm them, or apply them directly to synchronize Tickora's live countdown clock.
+                    Upvote valid updates to confirm them, or apply them directly to synchronize AheadOfYou's live countdown clock.
                   </p>
                 </div>
                 <button
@@ -570,7 +570,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
                                 onClick={() => handleApplyTip(item.id)}
                                 disabled={applyingId === item.id}
                                 className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-inter font-semibold shadow-md flex items-center gap-1.5 transition-all disabled:opacity-50"
-                                title="Merge this update into Tickora's live release schedule and countdown clock"
+                                title="Merge this update into AheadOfYou's live release schedule and countdown clock"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>{applyingId === item.id ? 'Applying...' : 'Apply to Live Radar'}</span>

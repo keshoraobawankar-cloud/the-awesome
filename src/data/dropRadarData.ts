@@ -20,9 +20,14 @@ export interface DropTitle {
   tagline: string;
   description: string;
   image?: string;
-  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata';
+  industry?: 'Hollywood' | 'Bollywood';
+  trustedSourceLabel?: string;
+  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata' | 'wikipedia';
   sourceId?: string;
   sourceUrl?: string;
+  trailerUrl?: string;
+  trailerEmbedUrl?: string;
+  trailerSource?: string;
   locked?: boolean;
   updatedAt?: string;
   dateHistory?: Array<{
@@ -102,7 +107,10 @@ export const HERO_FEATURED_DROP: DropTitle = {
   accent: '#ff3d71',
   tagline: 'The next monumental evolution of open-world criminal sandbox gameplay.',
   description: 'Welcome back to the neon-soaked streets of Vice City and Leonida. Dual protagonists Lucia and Jason ignite a high-stakes criminal saga.',
-  image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'
+  image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+  trailerUrl: 'https://www.youtube.com/watch?v=QdBZY2fkU-0',
+  trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/QdBZY2fkU-0?autoplay=1&rel=0',
+  trailerSource: 'Rockstar Games Official'
 };
 
 export const DROP_TITLES_12: DropTitle[] = [
@@ -119,7 +127,9 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#22d3ee',
     tagline: 'Miles Morales defies multiversal canon to save reality.',
     description: 'Trapped on Earth-42, Miles must escape his sinister counterpart while Gwen Stacy leads a rescue brigade across dimensions.',
-    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg'
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    industry: 'Hollywood',
+    trustedSourceLabel: 'Sony Pictures / Radar Desk'
   },
   {
     id: 'drop-demon-slayer',
@@ -133,7 +143,10 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#ff3d71',
     tagline: 'The climactic final confrontation against Muzan Kibutsuji begins.',
     description: 'The shifting rooms of the Infinity Castle host the mortal duel between the Hashira and the Upper Rank demons.',
-    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    trailerUrl: 'https://www.youtube.com/watch?v=ZfIXXgqxVn8',
+    trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/ZfIXXgqxVn8?autoplay=1&rel=0',
+    trailerSource: 'AniList / Aniplex Official'
   },
   {
     id: 'drop-wolverine',
@@ -147,7 +160,10 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#f59e0b',
     tagline: 'Brutal adamantium claw combat and gritty underworld hunts.',
     description: 'Logan navigates the treacherous underworld of Madripoor in a standalone, mature-rated action epic.',
-    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg'
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    trailerUrl: 'https://www.youtube.com/watch?v=1RlTT-f_cIw',
+    trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/1RlTT-f_cIw?autoplay=1&rel=0',
+    trailerSource: 'PlayStation / Insomniac Official'
   },
   {
     id: 'drop-stranger-things-5',
@@ -175,7 +191,10 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#f97316',
     tagline: 'A bittersweet summer romance that detonates into war.',
     description: 'Denji falls for the enigmatic Reze, unaware that foreign assassins are converging on Tokyo to capture the Chainsaw Heart.',
-    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg'
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    trailerUrl: 'https://www.youtube.com/watch?v=pv8A7eubPQQ',
+    trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/pv8A7eubPQQ?autoplay=1&rel=0',
+    trailerSource: 'AniList / MAPPA Official'
   },
   {
     id: 'drop-last-king-faerie',
@@ -203,7 +222,10 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#ec4899',
     tagline: 'Ascend to the peak of Pharloom with needle acrobatics.',
     description: 'Hornet explores a vast kingdom of silk and music, battling over 150 unique bug beasts across crystalline depths.',
-    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    trailerUrl: 'https://www.youtube.com/watch?v=pFAknD_9U7c',
+    trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/pFAknD_9U7c?autoplay=1&rel=0',
+    trailerSource: 'Team Cherry Official'
   },
   {
     id: 'drop-midtown-nights',
@@ -217,7 +239,9 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#3b82f6',
     tagline: 'Hard-boiled crime under the rainy neon canyons of NYC.',
     description: 'A heist syndicate hits three vaults simultaneously, triggering a frantic citywide pursuit by the NYPD 14th Precinct.',
-    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    industry: 'Hollywood',
+    trustedSourceLabel: 'Verified Radar Desk'
   },
   {
     id: 'drop-jujutsu-kaisen-manga',
@@ -245,7 +269,9 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#06b6d4',
     tagline: 'Delayed two weeks for North Atlantic VFX wave rendering.',
     description: 'An unbroken twenty-minute survival rescue during a Category 4 blizzard on the Grand Banks of Newfoundland.',
-    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg'
+    image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    industry: 'Hollywood',
+    trustedSourceLabel: 'Metro Pictures / Radar Desk'
   },
   {
     id: 'drop-wind-and-truth',

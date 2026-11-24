@@ -25,6 +25,11 @@ interface AniListMedia {
     timeUntilAiring: number;
     episode: number;
   };
+  trailer?: {
+    id?: string;
+    site?: string;
+    thumbnail?: string;
+  };
   siteUrl?: string;
 }
 
@@ -55,6 +60,11 @@ query UpcomingAnime($perPage: Int) {
         airingAt
         timeUntilAiring
         episode
+      }
+      trailer {
+        id
+        site
+        thumbnail
       }
       siteUrl
     }
@@ -141,6 +151,20 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
           daysRemaining = 45;
         }
 
+        let trailerUrl: string | undefined;
+        let trailerEmbedUrl: string | undefined;
+        let trailerSource: string | undefined;
+
+        if (item.trailer?.id && item.trailer?.site === 'youtube') {
+          trailerUrl = `https://www.youtube.com/watch?v=${item.trailer.id}`;
+          trailerEmbedUrl = `https://www.youtube-nocookie.com/embed/${item.trailer.id}?autoplay=1&rel=0`;
+          trailerSource = 'AniList Official Trailer';
+        } else if (item.trailer?.id && item.trailer?.site === 'dailymotion') {
+          trailerUrl = `https://www.dailymotion.com/video/${item.trailer.id}`;
+          trailerEmbedUrl = `https://www.dailymotion.com/embed/video/${item.trailer.id}?autoplay=1`;
+          trailerSource = 'AniList Official Trailer';
+        }
+
         drops.push({
           id: `anilist-anime-${item.id}`,
           name: titleName,
@@ -157,6 +181,9 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
           source: 'anilist',
           sourceId: String(item.id),
           sourceUrl: item.siteUrl,
+          trailerUrl,
+          trailerEmbedUrl,
+          trailerSource,
           updatedAt: new Date().toISOString()
         });
       }

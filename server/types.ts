@@ -52,9 +52,14 @@ export interface DropTitle {
   tagline: string;
   description: string;
   image?: string;
-  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata';
+  industry?: 'Hollywood' | 'Bollywood';
+  trustedSourceLabel?: string;
+  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata' | 'wikipedia';
   sourceId?: string;
   sourceUrl?: string;
+  trailerUrl?: string;
+  trailerEmbedUrl?: string;
+  trailerSource?: string;
   locked?: boolean; // locked from auto-overwrite
   updatedAt?: string;
   dateHistory?: ReleaseDateHistoryItem[];
@@ -90,7 +95,7 @@ export interface TimelineDrop {
 
 export interface SourceHealth {
   name: string;
-  id: 'anilist' | 'tmdb' | 'openlibrary' | 'rss' | 'manual' | 'sheets' | 'wikidata';
+  id: 'anilist' | 'tmdb' | 'openlibrary' | 'rss' | 'manual' | 'sheets' | 'wikidata' | 'wikipedia';
   status: 'online' | 'ready' | 'idle' | 'key_missing' | 'error';
   lastSuccess?: string;
   itemCount: number;
@@ -116,6 +121,8 @@ export interface SyncStatus {
   nextScheduledSync: string;
   isSyncing: boolean;
   autoSyncEnabled: boolean;
+  syncIntervalMinutes: number;
+  dataVersion: number;
   totalDrops: number;
   totalNews: number;
   lockedDropsCount: number;

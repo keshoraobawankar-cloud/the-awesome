@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, ShieldCheck, Radio, Database } from 'lucide-react';
 import { STATS_METRICS } from '../../data/dropRadarData';
+import { useDropData } from '../../context/DropDataContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -8,11 +9,30 @@ gsap.registerPlugin(ScrollTrigger);
 
 export const StatsSection: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const { drops, syncStatus } = useDropData();
   const [counts, setCounts] = useState<number[]>([0, 0, 0, 0]);
   const hasAnimated = useRef(false);
 
+  const metrics = useMemo(() => {
+    return STATS_METRICS.map((m, idx) => {
+      if (idx === 0 && drops.length > 0) {
+        return { ...m, value: Math.max(m.value, drops.length) };
+      }
+      if (idx === 1 && syncStatus?.sources?.length) {
+        return { ...m, value: Math.max(m.value, syncStatus.sources.length) };
+      }
+      return m;
+    });
+  }, [drops.length, syncStatus?.sources?.length]);
+
   const icons = [Database, Radio, Activity, ShieldCheck];
   const accents = ['#ff3d71', '#8b5cf6', '#22d3ee', '#10b981'];
+
+  useEffect(() => {
+    if (hasAnimated.current) {
+      setCounts(metrics.map((m) => m.value));
+    }
+  }, [metrics]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -24,7 +44,7 @@ export const StatsSection: React.FC = () => {
           hasAnimated.current = true;
 
           // Animate count values
-          STATS_METRICS.forEach((metric, idx) => {
+          metrics.forEach((metric, idx) => {
             const target = metric.value;
             const duration = 1800;
             const steps = 60;
@@ -55,7 +75,7 @@ export const StatsSection: React.FC = () => {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [metrics]);
 
   return (
     <section
@@ -82,7 +102,7 @@ export const StatsSection: React.FC = () => {
 
         {/* 4 Stats Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {STATS_METRICS.map((metric, idx) => {
+          {metrics.map((metric, idx) => {
             const Icon = icons[idx];
             const accent = accents[idx];
             const displayVal = counts[idx] || 0;
