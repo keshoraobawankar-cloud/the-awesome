@@ -7,6 +7,41 @@
  * e.g., const res = await fetch('/api/releases'); const data = await res.json();
  */
 
+import type { DropTrailerItem, TrailerKind } from '../utils/youtube';
+
+export type { DropTrailerItem, TrailerKind };
+
+export type TrailerType = 'Official Teaser' | 'Official Trailer' | 'Gameplay / Overview' | 'Final Trailer';
+
+export type TrailerSubmissionStatus = 'verified' | 'pending_review' | 'rejected' | 'flagged_broken';
+
+export interface TrailerSubmission {
+  id: string;
+  dropId: string;
+  dropName: string;
+  videoId: string;
+  provider: 'youtube';
+  canonicalUrl: string;
+  embedUrl: string;
+  kind?: TrailerKind;
+  trailerType: TrailerType;
+  submittedBy: string;
+  userConfirmedOfficial: boolean;
+  videoTitle?: string;
+  channelName?: string;
+  officialSignal: 'strong' | 'moderate' | 'ambiguous' | 'rejected';
+  status: TrailerSubmissionStatus;
+  isBrokenFix?: boolean;
+  tokensAwarded: number;
+  tokensHeld: number;
+  rejectionReason?: string;
+  flagReason?: string;
+  flaggedBy?: string;
+  rewardId?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
 export interface DropTitle {
   id: string;
   name: string;
@@ -22,12 +57,24 @@ export interface DropTitle {
   image?: string;
   industry?: 'Hollywood' | 'Bollywood';
   trustedSourceLabel?: string;
-  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata' | 'wikipedia';
+  source?: 'curated' | 'anilist' | 'tmdb' | 'openlibrary' | 'manual' | 'sheets' | 'wikidata' | 'wikipedia' | 'steam';
   sourceId?: string;
   sourceUrl?: string;
+  popularityScore?: number;
+  isPopular?: boolean;
   trailerUrl?: string;
   trailerEmbedUrl?: string;
   trailerSource?: string;
+  trailerAddedBy?: string;
+  trailerType?: TrailerType;
+  trailerVideoId?: string;
+  trailerStatus?: 'verified' | 'pending_review' | 'flagged_broken';
+  trailerBrokenFlag?: {
+    flaggedBy: string;
+    reason: string;
+    flaggedAt: string;
+  };
+  trailers?: DropTrailerItem[];
   locked?: boolean;
   updatedAt?: string;
   dateHistory?: Array<{
@@ -45,13 +92,14 @@ export interface UserUpdateSubmission {
   id: string;
   targetTitleId?: string;
   targetTitleName: string;
-  updateType: 'date_change' | 'delay_alert' | 'platform_added' | 'new_release' | 'breaking_scoop';
+  updateType: 'date_change' | 'delay_alert' | 'platform_added' | 'new_release' | 'breaking_scoop' | 'official_trailer';
   suggestedDate?: string;
   suggestedStatus?: 'Confirmed' | 'Tentative' | 'Delayed';
   category: 'Movies' | 'Anime' | 'Games' | 'Dramas' | 'Books' | 'Manga';
   platform?: string;
   details: string;
   sourceUrl?: string;
+  trailerUrl?: string;
   submittedBy: string;
   status: 'pending' | 'verified' | 'applied' | 'rejected';
   confirmationsCount: number;
@@ -95,12 +143,33 @@ export interface StackingNewsCard {
   tag: string;
 }
 
-export const HERO_FEATURED_DROP: DropTitle = {
+export const SILKSONG_FEATURED_DROP: DropTitle = {
+  id: 'drop-silksong',
+  name: 'Hollow Knight: Silksong',
+  category: 'Games',
+  date: '2026-12-15',
+  daysRemaining: 18,
+  status: 'Confirmed',
+  platform: 'Steam, Switch 2, PS5, Xbox Game Pass',
+  gradient: 'from-[#ec4899] via-[#8b5cf6] to-[#0b0d1a]',
+  accent: '#ec4899',
+  tagline: 'Ascend to the peak of Pharloom with needle acrobatics in Team Cherry’s long-awaited sequel.',
+  description: 'Hornet explores a vast haunted kingdom of silk and song, battling over 150 unique foes and towering bosses across luminous caverns.',
+  image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+  popularityScore: 96,
+  isPopular: true,
+  trustedSourceLabel: 'Team Cherry Official',
+  trailerUrl: 'https://www.youtube.com/watch?v=pFAknD_9U7c',
+  trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/pFAknD_9U7c?autoplay=1&rel=0',
+  trailerSource: 'Team Cherry Official'
+};
+
+export const GTA_VI_DROP: DropTitle = {
   id: 'drop-gta-6',
   name: 'Grand Theft Auto VI',
   category: 'Games',
   date: '2026-11-19',
-  daysRemaining: 14,
+  daysRemaining: 0,
   status: 'Confirmed',
   platform: 'PlayStation 5 / Xbox Series X|S',
   gradient: 'from-[#ff3d71] via-[#8b5cf6] to-[#0b0d1a]',
@@ -108,13 +177,18 @@ export const HERO_FEATURED_DROP: DropTitle = {
   tagline: 'The next monumental evolution of open-world criminal sandbox gameplay.',
   description: 'Welcome back to the neon-soaked streets of Vice City and Leonida. Dual protagonists Lucia and Jason ignite a high-stakes criminal saga.',
   image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+  popularityScore: 99,
+  isPopular: true,
+  trustedSourceLabel: 'Rockstar Games Official',
   trailerUrl: 'https://www.youtube.com/watch?v=QdBZY2fkU-0',
   trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/QdBZY2fkU-0?autoplay=1&rel=0',
   trailerSource: 'Rockstar Games Official'
 };
 
+export const HERO_FEATURED_DROP: DropTitle = SILKSONG_FEATURED_DROP;
+
 export const DROP_TITLES_12: DropTitle[] = [
-  HERO_FEATURED_DROP,
+  GTA_VI_DROP,
   {
     id: 'drop-spider-verse-3',
     name: 'Spider-Man: Beyond the Spider-Verse',
@@ -129,6 +203,8 @@ export const DROP_TITLES_12: DropTitle[] = [
     description: 'Trapped on Earth-42, Miles must escape his sinister counterpart while Gwen Stacy leads a rescue brigade across dimensions.',
     image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
     industry: 'Hollywood',
+    popularityScore: 96,
+    isPopular: true,
     trustedSourceLabel: 'Sony Pictures / Radar Desk'
   },
   {
@@ -144,6 +220,8 @@ export const DROP_TITLES_12: DropTitle[] = [
     tagline: 'The climactic final confrontation against Muzan Kibutsuji begins.',
     description: 'The shifting rooms of the Infinity Castle host the mortal duel between the Hashira and the Upper Rank demons.',
     image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    popularityScore: 95,
+    isPopular: true,
     trailerUrl: 'https://www.youtube.com/watch?v=ZfIXXgqxVn8',
     trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/ZfIXXgqxVn8?autoplay=1&rel=0',
     trailerSource: 'AniList / Aniplex Official'
@@ -192,6 +270,8 @@ export const DROP_TITLES_12: DropTitle[] = [
     tagline: 'A bittersweet summer romance that detonates into war.',
     description: 'Denji falls for the enigmatic Reze, unaware that foreign assassins are converging on Tokyo to capture the Chainsaw Heart.',
     image: '/src/assets/images/oscorp_tower_investigation_1793361605278.jpg',
+    popularityScore: 92,
+    isPopular: true,
     trailerUrl: 'https://www.youtube.com/watch?v=pv8A7eubPQQ',
     trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/pv8A7eubPQQ?autoplay=1&rel=0',
     trailerSource: 'AniList / MAPPA Official'
@@ -210,23 +290,7 @@ export const DROP_TITLES_12: DropTitle[] = [
     description: 'Ty Blackthorn and Kit Rook investigate high-ranking runes as the gates of the Faerie realm threaten to lock permanently.',
     image: '/src/assets/images/jj_jameson_editorial_1793361604257.jpg'
   },
-  {
-    id: 'drop-silksong',
-    name: 'Hollow Knight: Silksong',
-    category: 'Games',
-    date: '2026-12-15',
-    daysRemaining: 39,
-    status: 'Tentative',
-    platform: 'Steam, Switch, PS5, Xbox Game Pass',
-    gradient: 'from-[#ec4899] via-[#8b5cf6] to-[#0b0d1a]',
-    accent: '#ec4899',
-    tagline: 'Ascend to the peak of Pharloom with needle acrobatics.',
-    description: 'Hornet explores a vast kingdom of silk and music, battling over 150 unique bug beasts across crystalline depths.',
-    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
-    trailerUrl: 'https://www.youtube.com/watch?v=pFAknD_9U7c',
-    trailerEmbedUrl: 'https://www.youtube-nocookie.com/embed/pFAknD_9U7c?autoplay=1&rel=0',
-    trailerSource: 'Team Cherry Official'
-  },
+  SILKSONG_FEATURED_DROP,
   {
     id: 'drop-midtown-nights',
     name: 'Midtown Nights',
@@ -234,7 +298,7 @@ export const DROP_TITLES_12: DropTitle[] = [
     date: '2026-11-08',
     daysRemaining: 2,
     status: 'Confirmed',
-    platform: 'Theaters Nationwide & IMAX',
+    platform: 'Theaters Nationwide · IMAX & 4DX',
     gradient: 'from-[#3b82f6] via-[#1d4ed8] to-[#0b0d1a]',
     accent: '#3b82f6',
     tagline: 'Hard-boiled crime under the rainy neon canyons of NYC.',
@@ -264,7 +328,7 @@ export const DROP_TITLES_12: DropTitle[] = [
     date: '2026-11-29',
     daysRemaining: 24,
     status: 'Delayed',
-    platform: 'Metro Pictures / Theaters',
+    platform: 'Metro Pictures / Dolby Cinema',
     gradient: 'from-[#06b6d4] via-[#0284c7] to-[#0b0d1a]',
     accent: '#06b6d4',
     tagline: 'Delayed two weeks for North Atlantic VFX wave rendering.',
@@ -285,7 +349,9 @@ export const DROP_TITLES_12: DropTitle[] = [
     accent: '#38bdf8',
     tagline: 'The climactic tenth-day contest of champions on Roshar.',
     description: 'Brandon Sanderson concludes the first five-book cycle as Dalinar prepares to duel the divine champion of Odium.',
-    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'
+    image: '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg',
+    popularityScore: 89,
+    isPopular: true
   }
 ];
 

@@ -3,7 +3,7 @@ import {
   X, Send, Sparkles, CheckCircle2, Clock, 
   ExternalLink, ThumbsUp, AlertTriangle, 
   Film, Sparkles as AnimeIcon, Gamepad2, Tv, BookOpen, Layers,
-  Check, ArrowRight, UserCheck
+  Check, ArrowRight, UserCheck, Coins
 } from 'lucide-react';
 import { useDropData } from '../../context/DropDataContext';
 import { useBugle } from '../../context/BugleContext';
@@ -22,7 +22,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
   preselectedTitleId,
   preselectedTitleName
 }) => {
-  const { drops, userUpdates, submitUserUpdate, confirmUserUpdate, applyUserUpdate } = useDropData();
+  const { drops, userUpdates, contributorName, submitUserUpdate, confirmUserUpdate, applyUserUpdate } = useDropData();
   const { showToast } = useBugle();
 
   const [activeTab, setActiveTab] = useState<'submit' | 'feed'>('submit');
@@ -31,13 +31,14 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
   const [selectedExistingId, setSelectedExistingId] = useState<string>(preselectedTitleId || '');
   const [customTitleName, setCustomTitleName] = useState<string>(preselectedTitleName || '');
   const [category, setCategory] = useState<'Movies' | 'Anime' | 'Games' | 'Dramas' | 'Books' | 'Manga'>('Movies');
-  const [updateType, setUpdateType] = useState<'date_change' | 'delay_alert' | 'platform_added' | 'new_release' | 'breaking_scoop'>('date_change');
+  const [updateType, setUpdateType] = useState<'date_change' | 'delay_alert' | 'platform_added' | 'new_release' | 'breaking_scoop' | 'official_trailer'>('date_change');
   const [suggestedDate, setSuggestedDate] = useState<string>('');
   const [suggestedStatus, setSuggestedStatus] = useState<'Confirmed' | 'Tentative' | 'Delayed'>('Confirmed');
   const [platform, setPlatform] = useState<string>('');
   const [details, setDetails] = useState<string>('');
   const [sourceUrl, setSourceUrl] = useState<string>('');
-  const [submittedBy, setSubmittedBy] = useState<string>('');
+  const [trailerUrl, setTrailerUrl] = useState<string>('');
+  const [submittedBy, setSubmittedBy] = useState<string>(contributorName || '');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
@@ -104,24 +105,32 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
       platform: platform.trim() || undefined,
       details: details.trim(),
       sourceUrl: sourceUrl.trim() || undefined,
-      submittedBy: submittedBy.trim() || 'Anonymous Scout'
+      trailerUrl: trailerUrl.trim() || undefined,
+      submittedBy: submittedBy.trim() || contributorName || 'Trailer Scout'
     });
 
     setIsSubmitting(false);
 
     if (res.success) {
       setSubmitSuccess(true);
-      showToast('Tip submitted to AheadOfYou Community Feed! Thank you!');
+      if ((res.tokensAwarded || 0) > 0) {
+        showToast(`Official trailer added! +${res.tokensAwarded} tokens credited`);
+      } else if (res.trailerOutcome === 'pending_review') {
+        showToast('Submitted for verification — tokens held until approved!');
+      } else {
+        showToast('Tip submitted to AheadOfYou Community Feed! Thank you!');
+      }
       confetti({
-        particleCount: 70,
-        spread: 60,
+        particleCount: (res.tokensAwarded || 0) > 0 ? 95 : 70,
+        spread: 65,
         origin: { y: 0.6 },
-        colors: ['#22d3ee', '#8b5cf6', '#ff3d71']
+        colors: ['#f59e0b', '#22d3ee', '#8b5cf6', '#ff3d71']
       });
 
       // Reset form
       setTimeout(() => {
         setSubmitSuccess(false);
+        setTrailerUrl('');
         setActiveTab('feed');
       }, 1500);
     } else {
@@ -169,7 +178,8 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
     delay_alert: { label: 'Delay Alert', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' },
     platform_added: { label: 'Platform Added', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' },
     new_release: { label: 'New Announcement', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' },
-    breaking_scoop: { label: 'Breaking Scoop', color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' }
+    breaking_scoop: { label: 'Breaking Scoop', color: 'text-rose-400 bg-rose-500/10 border-rose-500/30' },
+    official_trailer: { label: 'Official Trailer (+25 Tokens)', color: 'text-amber-300 bg-amber-500/15 border-amber-400/40' }
   };
 
   return (
@@ -318,6 +328,7 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
                         className="w-full px-3 py-2 bg-[#0b0d1a] border border-[#2b3052] rounded-xl text-xs text-cyan-300 font-semibold focus:outline-none focus:border-cyan-400"
                       >
                         <option value="date_change">🕒 Date Change / Rescheduled</option>
+                        <option value="official_trailer">🎬 Official Trailer (+25 Tokens)</option>
                         <option value="delay_alert">⚠️ Delay Alert / Postponed</option>
                         <option value="platform_added">📺 Platform / Network Added</option>
                         <option value="new_release">🆕 New Release Announcement</option>
@@ -381,6 +392,25 @@ export const UserUpdateModal: React.FC<UserUpdateModalProps> = ({
                       value={details}
                       onChange={(e) => setDetails(e.target.value)}
                       className="w-full px-3 py-2 bg-[#0b0d1a] border border-[#2b3052] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 leading-relaxed"
+                    />
+                  </div>
+
+                  {/* Official Trailer URL (earns tokens!) */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-mono uppercase text-amber-300 font-bold flex items-center gap-1.5">
+                        <Coins className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Official Trailer URL (Optional — Earn +25 Verified Tokens)</span>
+                      </label>
+                      <span className="text-[10px] font-mono text-amber-200/80">Official YouTube Link</span>
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      value={trailerUrl}
+                      onChange={(e) => setTrailerUrl(e.target.value)}
+                      required={updateType === 'official_trailer'}
+                      className="w-full px-3 py-2 bg-[#0b0d1a] border border-amber-500/30 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
                     />
                   </div>
 

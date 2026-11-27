@@ -1,7 +1,20 @@
-import React, { useEffect, useRef } from 'react';
-import { ChevronDown, Sparkles } from 'lucide-react';
-import { DROP_TITLES_12 } from '../../data/dropRadarData';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ChevronDown,
+  Sparkles,
+  Gamepad2,
+  Film,
+  Tv,
+  BookOpen,
+  FileText,
+  ArrowRight,
+  Calendar,
+  Flame,
+  Clock
+} from 'lucide-react';
+import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useDropData } from '../../context/DropDataContext';
+import { computeRemainingTime, parseReleaseTimestamp } from '../../utils/countdown';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -9,22 +22,129 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface IntroSectionProps {
   onScrollNext: () => void;
+  onOpenModal?: (drop: DropTitle) => void;
 }
 
-export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
+function renderCategoryIcon(category?: DropTitle['category']) {
+  switch (category) {
+    case 'Games':
+      return <Gamepad2 className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    case 'Movies':
+      return <Film className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    case 'Dramas':
+      return <Tv className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    case 'Books':
+      return <BookOpen className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    case 'Manga':
+      return <FileText className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    case 'Anime':
+      return <Sparkles className="w-3.5 h-3.5 text-[#ff3d71]" />;
+    default:
+      return <Flame className="w-3.5 h-3.5 text-[#ff3d71]" />;
+  }
+}
+
+export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpenModal }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const wordsRef = useRef<HTMLSpanElement[]>([]);
   const posterWallRef = useRef<HTMLDivElement>(null);
   const scrollIndicatorRef = useRef<HTMLDivElement>(null);
-  const { drops } = useDropData();
-  const posterDrops = (drops && drops.length > 0 ? drops : DROP_TITLES_12).slice(0, 12);
+  const clockRowRef = useRef<HTMLDivElement>(null);
+  const clockDigitRefs = useRef<Array<HTMLSpanElement | null>>([]);
+  const prevSpotlightTimeRef = useRef<{
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
+  } | null>(null);
+  const { drops, heroDrop, trendingDrops } = useDropData();
+
+  const spotlightDrop = useMemo(() => {
+    return heroDrop || trendingDrops[0] || drops[0] || null;
+  }, [heroDrop, trendingDrops, drops]);
+
+  const spotlightTargetMs = useMemo(
+    () =>
+      spotlightDrop
+        ? parseReleaseTimestamp(spotlightDrop.date, spotlightDrop.daysRemaining)
+        : Date.now(),
+    [spotlightDrop?.id, spotlightDrop?.date, spotlightDrop?.daysRemaining]
+  );
+
+  const [spotlightRemaining, setSpotlightRemaining] = useState(() =>
+    computeRemainingTime(spotlightTargetMs)
+  );
+
+  useEffect(() => {
+    setSpotlightRemaining(computeRemainingTime(spotlightTargetMs));
+    const timer = window.setInterval(() => {
+      setSpotlightRemaining(computeRemainingTime(spotlightTargetMs));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [spotlightTargetMs]);
+
+  const isImminentSpotlight =
+    !spotlightRemaining.isReleased && spotlightRemaining.totalMs <= 24 * 60 * 60 * 1000;
+
+  useEffect(() => {
+    const current = {
+      days: spotlightRemaining.days,
+      hours: spotlightRemaining.hours,
+      minutes: spotlightRemaining.minutes,
+      seconds: spotlightRemaining.seconds
+    };
+    const prev = prevSpotlightTimeRef.current;
+    if (prev) {
+      (['days', 'hours', 'minutes', 'seconds'] as const).forEach((key, idx) => {
+        if (prev[key] !== current[key]) {
+          const el = clockDigitRefs.current[idx];
+          if (el) {
+            gsap.fromTo(
+              el,
+              { y: -5, opacity: 0.4, scale: 1.08 },
+              { y: 0, opacity: 1, scale: 1, duration: 0.3, ease: 'power2.out', overwrite: 'auto' }
+            );
+          }
+        }
+      });
+    }
+    prevSpotlightTimeRef.current = current;
+  }, [
+    spotlightRemaining.days,
+    spotlightRemaining.hours,
+    spotlightRemaining.minutes,
+    spotlightRemaining.seconds
+  ]);
+
+  useEffect(() => {
+    if (spotlightRemaining.isReleased || !clockRowRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.to(clockRowRef.current, {
+        boxShadow: isImminentSpotlight
+          ? '0 0 18px rgba(255, 61, 113, 0.35)'
+          : '0 0 14px rgba(34, 211, 238, 0.22)',
+        duration: isImminentSpotlight ? 0.9 : 1.8,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
+      });
+    }, clockRowRef);
+    return () => ctx.revert();
+  }, [spotlightRemaining.isReleased, isImminentSpotlight]);
+
+  const posterDrops = useMemo(() => {
+    const source = drops && drops.length > 0 ? drops : DROP_TITLES_12;
+    if (trendingDrops.length === 0) return source.slice(0, 12);
+    const featuredIds = new Set(trendingDrops.map((d) => d.id));
+    const ordered = [...trendingDrops, ...source.filter((d) => !featuredIds.has(d.id))];
+    return ordered.slice(0, 12);
+  }, [drops, trendingDrops]);
 
   const headlineWords = ['THE', 'NEXT', 'WAVE', 'OF', 'CULTURE', 'DROPS', 'HERE.'];
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // 1. Initial word-by-word fade in animation on load
       gsap.fromTo(
         wordsRef.current,
         { opacity: 0, y: 30, filter: 'blur(8px)' },
@@ -38,7 +158,6 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
         }
       );
 
-      // 2. ScrollTrigger timeline pinned for 100vh of scrolling
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -46,14 +165,11 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
           end: '+=100%',
           pin: true,
           scrub: 1,
+          invalidateOnRefresh: true,
           anticipatePin: 1
         }
       });
 
-      // As user scrolls:
-      // - Headline scales up dramatically (1 to 2.4) and fades out
-      // - Poster wall fades in behind it and scales from 0.85 to 1.05
-      // - Scroll indicator fades out immediately
       tl.to(
         headlineRef.current,
         {
@@ -93,7 +209,7 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
       ref={containerRef}
       className="relative w-full h-screen overflow-hidden bg-[#0b0d1a] flex items-center justify-center select-none"
     >
-      {/* Background Poster Wall (Fades in on scroll) */}
+      {/* Background Poster Wall (Prioritizes top trending drops across all categories) */}
       <div
         ref={posterWallRef}
         className="absolute inset-0 opacity-15 pointer-events-none transform scale-90 transition-all duration-300 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 p-4 overflow-hidden"
@@ -136,9 +252,21 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
 
       {/* Center Headline */}
       <div className="relative z-10 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171a30]/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm font-inter font-semibold uppercase tracking-widest mb-6 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
-          <span>AHEADOFYOU LIVE RELEASE RADAR</span>
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#171a30]/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm font-inter font-semibold uppercase tracking-widest mb-5 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+          {spotlightDrop ? (
+            <>
+              {renderCategoryIcon(spotlightDrop.category)}
+              <span>
+                TRENDING #1 · {spotlightDrop.category.toUpperCase()} · T-{spotlightDrop.daysRemaining}D ·{' '}
+                {spotlightDrop.name.toUpperCase()}
+              </span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AHEADOFYOU LIVE RELEASE RADAR</span>
+            </>
+          )}
         </div>
 
         <h1
@@ -164,22 +292,125 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext }) => {
           ))}
         </h1>
 
-        <p className="mt-6 text-base sm:text-xl text-slate-300 max-w-2xl font-inter font-light tracking-wide leading-relaxed">
-          Movies, Anime, Games, Dramas, Books and Manga. Real-time countdowns, audited drop calendars, and breaking scoops.
+        <p className="mt-5 text-sm sm:text-lg text-slate-300 max-w-2xl font-inter font-light tracking-wide leading-relaxed">
+          {spotlightDrop
+            ? `Trending #1 across the radar: ${spotlightDrop.name} (${spotlightDrop.category}) launches ${spotlightDrop.date} on ${spotlightDrop.platform}.`
+            : 'Movies, Anime, Games, Dramas, Books and Manga. Real-time countdowns, audited drop calendars, and breaking scoops.'}
         </p>
+
+        {/* Live #1 Trending Release Spotlight Bar with Remaining Time Clock */}
+        {spotlightDrop && (
+          <div className="mt-6 w-full max-w-3xl rounded-2xl bg-[#121528]/90 border border-[#2b3052] hover:border-cyan-400/60 backdrop-blur-md p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_0_30px_rgba(11,13,26,0.8)] transition-colors">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="flex items-center gap-3 text-left min-w-0">
+                <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#2b3052] bg-[#171a30]">
+                  <img
+                    src={spotlightDrop.image || '/src/assets/images/bank_heist_web_aftermath_1793361604681.jpg'}
+                    alt={spotlightDrop.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+                    <span className="text-[#ff3d71] font-bold">
+                      TRENDING NOW · {spotlightDrop.category.toUpperCase()}
+                    </span>
+                    <span className="text-slate-500">•</span>
+                    <span className="text-cyan-300 font-semibold flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {spotlightDrop.date}
+                    </span>
+                  </div>
+                  <p className="font-bebas text-xl sm:text-2xl text-white tracking-wide truncate leading-tight">
+                    {spotlightDrop.name}
+                  </p>
+                  <p className="text-[11px] font-inter text-slate-400 truncate">
+                    {spotlightDrop.platform}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={onScrollNext}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white text-xs font-inter font-bold flex items-center gap-1.5 hover:opacity-95 transition-opacity shadow-lg"
+                >
+                  <span>Full Clock</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                {onOpenModal && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenModal(spotlightDrop)}
+                    className="px-3 py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-xs font-inter font-semibold text-cyan-300 transition-colors"
+                  >
+                    Intel
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Live Remaining Time to Release Readout */}
+            <div
+              ref={clockRowRef}
+              className="pt-2.5 border-t border-[#252846] rounded-xl px-2 pb-1 flex flex-wrap items-center justify-between gap-2"
+            >
+              <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-300 flex items-center gap-1.5">
+                <Clock
+                  className={`w-3.5 h-3.5 animate-pulse ${
+                    isImminentSpotlight ? 'text-[#ff3d71]' : 'text-cyan-400'
+                  }`}
+                />
+                Remaining Time to Release
+              </span>
+              {spotlightRemaining.isReleased ? (
+                <span className="text-xs font-mono font-bold text-emerald-300">
+                  OUT NOW · Released {spotlightDrop.date}
+                </span>
+              ) : (
+                <div className="flex items-center gap-1.5 sm:gap-2 font-mono tabular-nums">
+                  {[
+                    { unit: 'D', val: spotlightRemaining.days },
+                    { unit: 'H', val: spotlightRemaining.hours },
+                    { unit: 'M', val: spotlightRemaining.minutes },
+                    { unit: 'S', val: spotlightRemaining.seconds }
+                  ].map((part, idx) => (
+                    <span
+                      key={part.unit}
+                      className={`px-2 py-0.5 rounded-lg bg-[#0b0d1a] border text-xs sm:text-sm font-bold text-white inline-flex items-baseline ${
+                        isImminentSpotlight ? 'border-[#ff3d71]/45' : 'border-[#2b3052]'
+                      }`}
+                    >
+                      <span
+                        ref={(el) => {
+                          clockDigitRefs.current[idx] = el;
+                        }}
+                        className="inline-block will-change-transform"
+                      >
+                        {String(part.val).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] text-cyan-400 ml-0.5">{part.unit}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Scroll Down Indicator */}
       <div
         ref={scrollIndicatorRef}
         onClick={onScrollNext}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors group"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors group"
       >
         <span className="text-[11px] font-mono uppercase tracking-[0.25em] font-semibold">Scroll</span>
         <div className="w-6 h-10 rounded-full border-2 border-slate-500 group-hover:border-cyan-400 flex items-start justify-center p-1 transition-colors">
           <div className="w-1.5 h-2.5 rounded-full bg-cyan-400 animate-bounce" />
         </div>
-        <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 animate-pulse -mt-1" />
+        <ChevronDown className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 -mt-1" />
       </div>
     </section>
   );

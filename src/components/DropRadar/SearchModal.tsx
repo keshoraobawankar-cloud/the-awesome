@@ -3,6 +3,7 @@ import { Search, X, Calendar, ArrowRight, BellRing } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useDropData } from '../../context/DropDataContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { FormatBadge, inferMovieFormats } from './FormatBadge';
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -147,9 +148,15 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSel
                           {drop.date}
                         </span>
                       </div>
-                      <h4 className="font-bebas text-xl text-white tracking-wide truncate">
-                        {drop.name}
-                      </h4>
+                      <div className="flex flex-wrap items-center gap-1.5 mb-1">
+                        <h4 className="font-bebas text-xl text-white tracking-wide truncate">
+                          {drop.name}
+                        </h4>
+                        {drop.category === 'Movies' &&
+                          inferMovieFormats(drop).map((fmt) => (
+                            <FormatBadge key={fmt} format={fmt} size="xs" />
+                          ))}
+                      </div>
                       <p className="text-xs text-slate-400 truncate max-w-md font-inter">
                         {drop.tagline}
                       </p>

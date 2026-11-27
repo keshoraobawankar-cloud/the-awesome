@@ -11,24 +11,33 @@ import {
   Search,
   Sparkles,
   Clapperboard,
-  Share2
+  Share2,
+  Coins
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useDropData } from '../../context/DropDataContext';
 import { useBugle } from '../../context/BugleContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { FormatBadge, inferMovieFormats } from './FormatBadge';
 
 interface HollywoodBollywoodSectionProps {
   onOpenModal: (drop: DropTitle, autoPlayTrailer?: boolean) => void;
   onShareMovie: (drop: DropTitle) => void;
+  onOpenTrailerModal?: (drop: DropTitle, mode: 'submit' | 'view_or_flag') => void;
 }
 
-type CinemaTab = 'All' | 'Hollywood' | 'Bollywood';
+type CinemaTab = 'All' | 'IMAX' | 'Hollywood' | 'Bollywood';
+
+function isImaxTitle(drop: DropTitle): boolean {
+  const hay = `${drop.platform} ${drop.tagline} ${drop.description}`.toLowerCase();
+  return hay.includes('imax') || hay.includes('70mm');
+}
 
 export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps> = ({
   onOpenModal,
-  onShareMovie
+  onShareMovie,
+  onOpenTrailerModal
 }) => {
   const { drops } = useDropData();
   const { isWatchlisted, toggleWatchlist } = useBugle();
@@ -39,7 +48,7 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
 
   const allDrops = drops && drops.length > 0 ? drops : DROP_TITLES_12;
 
-  const { hollywoodMovies, bollywoodMovies } = useMemo(() => {
+  const { hollywoodMovies, bollywoodMovies, imaxTitles } = useMemo(() => {
     const cinemaPool = allDrops.filter(
       (d) =>
         d.category === 'Movies' &&
@@ -63,10 +72,14 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
         .slice(0, 8),
       bollywoodMovies: cinemaPool
         .filter((d) => d.industry === 'Bollywood' && matchesQuery(d))
+        .slice(0, 8),
+      imaxTitles: allDrops
+        .filter((d) => isImaxTitle(d) && matchesQuery(d))
         .slice(0, 8)
     };
   }, [allDrops, filterText]);
 
+  const visibleImax = activeTab === 'IMAX';
   const visibleHollywood = activeTab === 'All' || activeTab === 'Hollywood';
   const visibleBollywood = activeTab === 'All' || activeTab === 'Bollywood';
 
@@ -145,19 +158,57 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
               </span>
             </div>
 
-            {/* Bottom Play Official Trailer Trigger */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenModal(movie, true);
-              }}
-              className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-[#0b0d1a]/85 hover:bg-[#ff3d71] border border-[#2b3052] hover:border-[#ff3d71] text-white text-xs font-mono font-semibold flex items-center gap-1.5 backdrop-blur-md transition-all"
-              title="Play Official Trailer"
-            >
-              <Play className="w-3.5 h-3.5 fill-current text-cyan-300 group-hover:text-white" />
-              <span>Trailer</span>
-            </button>
+            {/* Bottom Play / Add Official Trailer Trigger */}
+            {(() => {
+              const isBroken = movie.trailerStatus === 'flagged_broken';
+              const hasActiveTrailer = Boolean(movie.trailerEmbedUrl && !isBroken);
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (hasActiveTrailer) {
+                      onOpenModal(movie, true);
+                    } else if (onOpenTrailerModal) {
+                      onOpenTrailerModal(movie, 'submit');
+                    } else {
+                      onOpenModal(movie, true);
+                    }
+                  }}
+                  className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-xl border text-white text-xs font-mono font-semibold flex items-center gap-1.5 backdrop-blur-md transition-all ${
+                    hasActiveTrailer
+                      ? 'bg-[#0b0d1a]/85 hover:bg-[#ff3d71] border-[#2b3052] hover:border-[#ff3d71]'
+                      : isBroken
+                      ? 'bg-[#0b0d1a]/90 hover:bg-rose-500 hover:text-white border-rose-400/60 shadow-[0_0_14px_rgba(244,63,94,0.3)]'
+                      : 'bg-[#0b0d1a]/90 hover:bg-amber-500 hover:text-[#0b0d1a] border-amber-400/60 shadow-[0_0_14px_rgba(245,158,11,0.3)]'
+                  }`}
+                  title={
+                    hasActiveTrailer
+                      ? 'Play Official Trailer'
+                      : isBroken
+                      ? 'Replace Broken Trailer & Earn +10 Tokens'
+                      : 'Add Official Trailer & Earn +25 Tokens'
+                  }
+                >
+                  {hasActiveTrailer ? (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current text-cyan-300 group-hover:text-white" />
+                      <span>Trailer</span>
+                    </>
+                  ) : isBroken ? (
+                    <>
+                      <Coins className="w-3.5 h-3.5 text-rose-400 group-hover:text-current" />
+                      <span>Fix Trailer · +10</span>
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="w-3.5 h-3.5 text-amber-400 group-hover:text-current" />
+                      <span>Add Trailer · +25</span>
+                    </>
+                  )}
+                </button>
+              );
+            })()}
           </div>
 
           {/* Card Content */}
@@ -179,6 +230,12 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
             >
               {movie.name}
             </h3>
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              {inferMovieFormats(movie).map((fmt) => (
+                <FormatBadge key={fmt} format={fmt} size="xs" />
+              ))}
+            </div>
 
             <p className="text-xs text-slate-300 font-inter line-clamp-2 leading-relaxed">
               {movie.tagline}
@@ -294,10 +351,11 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
 
           {/* Interactive Controls: Industry Tabs & Search */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846]">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846] overflow-x-auto">
               {(
                 [
                   { id: 'All', label: 'All Cinema', count: hollywoodMovies.length + bollywoodMovies.length },
+                  { id: 'IMAX', label: 'IMAX & 70mm', count: imaxTitles.length },
                   { id: 'Hollywood', label: 'Hollywood', count: hollywoodMovies.length },
                   { id: 'Bollywood', label: 'Bollywood', count: bollywoodMovies.length }
                 ] as const
@@ -308,17 +366,19 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-2 rounded-lg text-xs font-inter font-semibold flex items-center gap-1.5 transition-all ${
+                    className={`px-3 py-2 rounded-lg text-xs font-inter font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${
                       active
                         ? tab.id === 'Bollywood'
                           ? 'bg-gradient-to-r from-[#f59e0b] to-[#ff3d71] text-white shadow'
+                          : tab.id === 'IMAX'
+                          ? 'bg-[#ff3d71] text-white font-bold shadow'
                           : 'bg-gradient-to-r from-[#22d3ee] to-[#8b5cf6] text-[#0b0d1a] font-bold shadow'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <span>{tab.label}</span>
                     <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono tabular-nums ${
                         active ? 'bg-black/20 text-current' : 'bg-[#171a30] text-slate-400'
                       }`}
                     >
@@ -341,6 +401,37 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
             </div>
           </div>
         </div>
+
+        {/* IMAX & 70mm Showcase Block */}
+        {visibleImax && (
+          <div className="mb-14">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-[#252846]/70">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-[#ff3d71]/15 border border-[#ff3d71]/40 text-[#ff3d71]">
+                  <Clapperboard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bebas text-3xl text-white tracking-wide">
+                    IMAX &amp; <span className="text-[#ff3d71]">70MM LARGE FORMAT</span>
+                  </h3>
+                  <p className="text-xs font-mono text-slate-400">
+                    Theatrical IMAX 70mm, IMAX Laser &amp; Global Large-Format Screenings
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {imaxTitles.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-[#121528] border border-[#252846] text-center text-sm text-slate-400">
+                No upcoming IMAX or 70mm releases matched &ldquo;{filterText}&rdquo;.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {imaxTitles.map(renderMovieCard)}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Hollywood Showcase Block */}
         {visibleHollywood && (

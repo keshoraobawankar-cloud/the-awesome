@@ -24,7 +24,7 @@ export const NewsStackSection: React.FC = () => {
   };
 
   return (
-    <section id="news-section" className="relative w-full py-20 sm:py-28 bg-[#0b0d1a] overflow-hidden">
+    <section id="news-section" className="relative w-full py-20 sm:py-28 bg-[#0b0d1a] overflow-x-clip">
       {/* 1. Scrolling Breaking-News Ticker */}
       <div className="w-full bg-[#121528] border-y border-[#252846] py-3 overflow-hidden flex items-center mb-16 shadow-lg">
         <div className="flex-none bg-[#ff3d71] text-white px-4 py-1.5 font-bebas text-lg tracking-wider flex items-center gap-2 z-10 shadow-md">
@@ -62,8 +62,8 @@ export const NewsStackSection: React.FC = () => {
         <div className="relative pb-24 space-y-12">
           {currentNews.map((card, idx) => {
             const isBookmarked = isSaved(card.id);
-            // Sticky top offset increases slightly per card
-            const topOffset = 100 + idx * 24;
+            // Sticky top offset increases slightly per card (capped to prevent overflowing viewport)
+            const topOffset = 96 + Math.min(idx, 5) * 18;
 
             return (
               <div

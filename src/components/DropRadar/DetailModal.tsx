@@ -1,9 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { X, Bell, BellRing, Check, Play, Calendar, ExternalLink, Sparkles, Share2, ShieldCheck, Film, Lock, Unlock, Radio, PlusCircle } from 'lucide-react';
-import { DropTitle } from '../../data/dropRadarData';
+import React, { useState, useEffect, useMemo } from 'react';
+import { X, Bell, BellRing, Check, Play, Calendar, ExternalLink, Share2, ShieldCheck, Film, Lock, Unlock, Radio, PlusCircle, Coins, Flag } from 'lucide-react';
+import { DropTitle, DropTrailerItem, TrailerKind } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { FormatBadge, inferMovieFormats } from './FormatBadge';
+import { TrailerSwitcher } from './TrailerSwitcher';
+import {
+  buildYouTubeEmbedUrl,
+  computePrimaryTrailer,
+  getTrailerSlotReward,
+  parseYouTubeTrailerUrl,
+  trailerKindShortLabel,
+  trailerTypeToKind
+} from '../../utils/youtube';
+import { computeRemainingTime, parseReleaseTimestamp } from '../../utils/countdown';
 import confetti from 'canvas-confetti';
 
 interface DetailModalProps {
@@ -12,20 +23,30 @@ interface DetailModalProps {
   onClose: () => void;
   onOpenUserUpdate?: (titleId: string, titleName: string) => void;
   onShareDrop?: (drop: DropTitle) => void;
+  onOpenTrailerModal?: (drop: DropTitle, mode: 'submit' | 'view_or_flag') => void;
 }
 
-export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrailer = false, onClose, onOpenUserUpdate, onShareDrop }) => {
+export const DetailModal: React.FC<DetailModalProps> = ({
+  drop: propDrop,
+  initialPlayTrailer = false,
+  onClose,
+  onOpenUserUpdate,
+  onShareDrop,
+  onOpenTrailerModal
+}) => {
   const { isWatchlisted, toggleWatchlist, showToast } = useBugle();
-  const { updateDropStatus, toggleDropLock, updateDropDate, resolveOfficialTrailer, attachOfficialTrailer } = useDropData();
+  const { drops, updateDropStatus, toggleDropLock, updateDropDate, resolveOfficialTrailer } = useDropData();
   const { hasActiveRuleFor, openNotifyModal } = useNotifications();
+  const drop = propDrop ? (drops.find((d) => d.id === propDrop.id) || propDrop) : null;
   const [isPlayingTrailer, setIsPlayingTrailer] = useState(false);
   const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
   const [resolvedTrailer, setResolvedTrailer] = useState<{
     trailerUrl?: string;
     trailerEmbedUrl?: string;
     trailerSource?: string;
+    trailers?: DropTrailerItem[];
   } | null>(null);
-  const [customTrailerInput, setCustomTrailerInput] = useState('');
+  const [selectedTrailerKind, setSelectedTrailerKind] = useState<TrailerKind>('official_trailer');
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [newDateInput, setNewDateInput] = useState('');
   const [shiftReason, setShiftReason] = useState('');
@@ -34,16 +55,15 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    if (!drop) return;
+    if (!propDrop) return;
     let cancelled = false;
     setResolvedTrailer(null);
-    setCustomTrailerInput('');
 
     if (initialPlayTrailer) {
       setIsPlayingTrailer(true);
-      if (!drop.trailerEmbedUrl) {
+      if (!propDrop.trailerEmbedUrl) {
         setIsLoadingTrailer(true);
-        resolveOfficialTrailer(drop.id)
+        resolveOfficialTrailer(propDrop.id)
           .then((result) => {
             if (!cancelled) {
               setResolvedTrailer(result);
@@ -62,16 +82,16 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
       setIsLoadingTrailer(false);
     }
 
-    const target = new Date(drop.date).getTime() || Date.now() + drop.daysRemaining * 86400000;
+    const target = parseReleaseTimestamp(propDrop.date, propDrop.daysRemaining);
 
     const calc = () => {
-      const now = Date.now();
-      const diff = Math.max(0, target - now);
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      setCountdown({ days, hours, minutes, seconds });
+      const rem = computeRemainingTime(target);
+      setCountdown({
+        days: rem.days,
+        hours: rem.hours,
+        minutes: rem.minutes,
+        seconds: rem.seconds
+      });
     };
 
     calc();
@@ -80,7 +100,46 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
       cancelled = true;
       clearInterval(interval);
     };
-  }, [drop, initialPlayTrailer]);
+  }, [propDrop?.id, initialPlayTrailer]);
+
+  const activeTrailers = useMemo<DropTrailerItem[]>(() => {
+    if (!drop) return [];
+    const sourceList =
+      (drop.trailers && drop.trailers.length > 0 ? drop.trailers : resolvedTrailer?.trailers) || [];
+    const active = sourceList.filter((t) => t.status !== 'flagged_broken');
+    if (active.length > 0) return active;
+
+    const fallbackEmbed = resolvedTrailer?.trailerEmbedUrl || drop.trailerEmbedUrl;
+    const fallbackUrl = resolvedTrailer?.trailerUrl || drop.trailerUrl;
+    if (fallbackEmbed && drop.trailerStatus !== 'flagged_broken') {
+      const parsed = fallbackUrl ? parseYouTubeTrailerUrl(fallbackUrl) : null;
+      const vid = drop.trailerVideoId || parsed?.videoId || 'primary';
+      return [
+        {
+          id: `fallback_${drop.id}_${vid}`,
+          dropId: drop.id,
+          kind: trailerTypeToKind(drop.trailerType || 'Official Trailer'),
+          videoId: vid,
+          url: fallbackUrl || parsed?.canonicalUrl || '',
+          embedUrl: fallbackEmbed,
+          channelName: resolvedTrailer?.trailerSource || drop.trailerSource || 'Official Channel',
+          addedByUserId: drop.trailerAddedBy,
+          isPrimary: true,
+          status: 'verified',
+          createdAt: drop.updatedAt || ''
+        }
+      ];
+    }
+    return [];
+  }, [drop, resolvedTrailer]);
+
+  const primaryTrailer = useMemo(() => computePrimaryTrailer(activeTrailers), [activeTrailers]);
+
+  useEffect(() => {
+    if (primaryTrailer) {
+      setSelectedTrailerKind(primaryTrailer.kind);
+    }
+  }, [drop?.id, primaryTrailer?.id]);
 
   if (!drop) return null;
 
@@ -112,6 +171,28 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
     }
   };
 
+  const isBrokenTrailer = drop.trailerStatus === 'flagged_broken';
+  const hasVerifiedTrailer = Boolean((resolvedTrailer?.trailerEmbedUrl || drop.trailerEmbedUrl) && !isBrokenTrailer);
+  const rewardAmount = isBrokenTrailer ? 10 : 25;
+
+  const launchTrailerModal = (mode: 'submit' | 'view_or_flag') => {
+    if (onOpenTrailerModal) {
+      onClose();
+      onOpenTrailerModal(drop, mode);
+    }
+  };
+
+  const selectedTrailer =
+    activeTrailers.find((t) => t.kind === selectedTrailerKind) ||
+    primaryTrailer ||
+    activeTrailers[0];
+  const openSlotKinds = (['official_trailer', 'teaser', 'gameplay', 'launch_trailer'] as TrailerKind[]).filter(
+    (k) => !activeTrailers.some((t) => t.kind === k)
+  );
+  const topOpenSlotReward = openSlotKinds.length > 0
+    ? Math.max(...openSlotKinds.map((k) => getTrailerSlotReward(k, false)))
+    : 25;
+
   return (
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-[#0b0d1a]/85 backdrop-blur-2xl animate-in fade-in duration-200"
@@ -134,12 +215,21 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
         <div className="relative aspect-video w-full bg-[#0b0d1a] overflow-hidden flex-shrink-0">
           {isPlayingTrailer ? (
             (() => {
-              const activeEmbed = resolvedTrailer?.trailerEmbedUrl || drop.trailerEmbedUrl;
+              const activeEmbed =
+                selectedTrailer?.embedUrl ||
+                (selectedTrailer?.videoId ? buildYouTubeEmbedUrl(selectedTrailer.videoId) : undefined) ||
+                resolvedTrailer?.trailerEmbedUrl ||
+                drop.trailerEmbedUrl;
               const activeWatchUrl =
+                selectedTrailer?.url ||
                 resolvedTrailer?.trailerUrl ||
                 drop.trailerUrl ||
                 `https://www.youtube.com/results?search_query=${encodeURIComponent(drop.name + ' official trailer')}`;
-              const activeSource = resolvedTrailer?.trailerSource || drop.trailerSource || 'Official Channel';
+              const activeSource =
+                selectedTrailer?.channelName ||
+                resolvedTrailer?.trailerSource ||
+                drop.trailerSource ||
+                'Official Channel';
 
               if (isLoadingTrailer) {
                 return (
@@ -158,13 +248,14 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
               if (activeEmbed) {
                 return (
                   <div className="relative w-full h-full bg-black">
-                    <iframe
-                      src={activeEmbed}
-                      title={`${drop.name} Official Trailer`}
-                      className="w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                      allowFullScreen
+                    <TrailerSwitcher
+                      dropTitle={drop.name}
+                      trailers={activeTrailers}
+                      fallbackTrailerUrl={activeWatchUrl}
+                      autoplay
+                      showSourceFooter={false}
+                      className="h-full [&>div[role=tablist]]:absolute [&>div[role=tablist]]:top-3 [&>div[role=tablist]]:left-3 [&>div[role=tablist]]:z-20 [&>div[role=tablist]]:bg-[#0b0d1a]/80 [&>div[role=tablist]]:backdrop-blur-md [&>div[role=tablist]]:p-1 [&>div[role=tablist]]:rounded-full [&>div[role=tablist]]:border [&>div[role=tablist]]:border-[#2b3052] [&>div.aspect-video]:h-full [&>div.aspect-video]:rounded-none"
+                      onActiveTrailerChange={(item) => setSelectedTrailerKind(item.kind)}
                     />
                     <div className="absolute bottom-3 left-3 right-14 flex items-center justify-between pointer-events-none">
                       <span className="px-2.5 py-1 rounded-md bg-[#0b0d1a]/85 border border-cyan-500/40 text-[11px] font-mono text-cyan-300 backdrop-blur-md">
@@ -193,57 +284,48 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
               }
 
               return (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-[#080a16] p-6 text-center space-y-3">
-                  <Film className="w-10 h-10 text-cyan-400" />
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#080a16] p-5 sm:p-6 text-center space-y-3">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-[11px] font-mono font-bold">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span>
+                      {isBrokenTrailer
+                        ? `REPLACE BROKEN TRAILER · +${rewardAmount} TOKENS`
+                        : `ADD OFFICIAL TRAILER · +${rewardAmount} TOKENS`}
+                    </span>
+                  </div>
                   <div>
                     <p className="font-bebas text-2xl text-white tracking-wide">
-                      OFFICIAL SOURCE TRAILER
+                      NO VERIFIED OFFICIAL TRAILER YET
                     </p>
                     <p className="text-xs text-slate-400 font-inter max-w-md mt-1">
-                      Open the official trailer search or attach a direct YouTube official trailer URL below.
+                      Launch the Official Trailer verification flow to submit a YouTube studio link, run automated checks, and claim +{rewardAmount} tokens.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center justify-center gap-2">
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    {onOpenTrailerModal && (
+                      <button
+                        type="button"
+                        onClick={() => launchTrailerModal('submit')}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-[#0b0d1a] text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_16px_rgba(245,158,11,0.35)]"
+                      >
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>Add Official Trailer (+{rewardAmount} Tokens)</span>
+                      </button>
+                    )}
                     <a
                       href={activeWatchUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white text-xs font-bold flex items-center gap-1.5"
+                      className="px-3.5 py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-cyan-300 text-xs font-mono flex items-center gap-1.5"
                     >
-                      <span>Search Official Trailer</span>
+                      <span>Search on YouTube</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                     <button
                       onClick={() => setIsPlayingTrailer(false)}
-                      className="px-4 py-2 rounded-xl bg-[#171a30] border border-[#2b3052] text-xs font-mono text-slate-300 hover:text-white"
+                      className="px-3.5 py-2 rounded-xl bg-[#171a30] border border-[#2b3052] text-xs font-mono text-slate-300 hover:text-white"
                     >
                       Back
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2 w-full max-w-md pt-1">
-                    <input
-                      type="url"
-                      value={customTrailerInput}
-                      onChange={(e) => setCustomTrailerInput(e.target.value)}
-                      placeholder="Paste official YouTube trailer URL..."
-                      className="flex-1 px-3 py-1.5 rounded-lg bg-[#121528] border border-[#2b3052] text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!customTrailerInput.trim()) return;
-                        const ok = await attachOfficialTrailer(drop.id, customTrailerInput.trim());
-                        if (ok) {
-                          const fetched = await resolveOfficialTrailer(drop.id);
-                          setResolvedTrailer(fetched);
-                          showToast('Official trailer linked!');
-                        } else {
-                          showToast('Please enter a valid trailer URL.');
-                        }
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/50 text-cyan-300 text-xs font-mono font-bold hover:bg-cyan-500/30"
-                    >
-                      Attach
                     </button>
                   </div>
                 </div>
@@ -290,6 +372,38 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
           )}
         </div>
 
+        {/* Multi-Trailer Switcher Strip (renders whenever >1 verified video is attached) */}
+        {activeTrailers.length > 1 && (
+          <div className="px-6 py-2.5 bg-[#0b0d1a] border-b border-[#252846] flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {activeTrailers.map((item) => {
+                const isSelected = selectedTrailer?.id === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTrailerKind(item.kind);
+                      setIsPlayingTrailer(true);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-mono font-semibold border transition-all flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-cyan-500/20 border-cyan-400/60 text-cyan-200'
+                        : 'bg-[#171a30] border-[#252846] text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <Play className="w-3 h-3" />
+                    <span>{trailerKindShortLabel(item.kind)}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[10px] font-mono text-slate-400">
+              {activeTrailers.length} verified clips attached
+            </span>
+          </div>
+        )}
+
         {/* Modal Body */}
         <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1">
           {/* Top metadata tags */}
@@ -309,6 +423,10 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
                   {drop.industry}
                 </span>
               )}
+              {drop.category === 'Movies' &&
+                inferMovieFormats(drop).map((fmt) => (
+                  <FormatBadge key={fmt} format={fmt} size="sm" />
+                ))}
               <span className="px-3 py-1 rounded-full text-xs font-mono font-semibold bg-[#171a30] text-cyan-300 border border-[#2b3052]">
                 {drop.platform}
               </span>
@@ -392,6 +510,77 @@ export const DetailModal: React.FC<DetailModalProps> = ({ drop, initialPlayTrail
             <p className="text-slate-400 text-sm sm:text-base font-inter">
               {drop.tagline}
             </p>
+          </div>
+
+          {/* Official Trailer Bounty Card */}
+          <div
+            className={`p-4 rounded-2xl border flex flex-wrap items-center justify-between gap-3 ${
+              hasVerifiedTrailer
+                ? 'bg-[#0b0d1a] border-[#252846]'
+                : isBrokenTrailer
+                ? 'bg-rose-500/10 border-rose-500/40'
+                : 'bg-gradient-to-r from-amber-500/15 via-[#141830] to-[#0b0d1a] border-amber-500/40'
+            }`}
+          >
+            <div className="space-y-1 text-xs font-mono">
+              <div className="flex items-center gap-2 font-semibold flex-wrap">
+                <Coins className="w-4 h-4 text-amber-400" />
+                {hasVerifiedTrailer ? (
+                  <span className="text-emerald-300">
+                    {activeTrailers.length > 1
+                      ? `${activeTrailers.length} Verified Clips (${activeTrailers.map((t) => trailerKindShortLabel(t.kind)).join(' · ')})`
+                      : `${drop.trailerType || 'Official Trailer'} Verified`}
+                    {drop.trailerAddedBy ? ` · Added by ${drop.trailerAddedBy}` : ''}
+                  </span>
+                ) : isBrokenTrailer ? (
+                  <span className="text-rose-300">
+                    Trailer Flagged Broken · Replace Link & Earn +{rewardAmount} Tokens
+                  </span>
+                ) : (
+                  <span className="text-amber-300">
+                    No Official Trailer Yet · Add Verified Link & Earn +{rewardAmount} Tokens
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-400 font-inter">
+                {hasVerifiedTrailer
+                  ? openSlotKinds.length > 0
+                    ? `Open slots (${openSlotKinds.map((k) => `${trailerKindShortLabel(k)} +${getTrailerSlotReward(k)}`).join(', ')}) can still earn tokens. Flag outdated links if broken.`
+                    : 'All trailer slots verified. Flag outdated/broken links if any clip no longer plays.'
+                  : 'Tokens are credited after URL normalization, duplicate lock, and automated official verification.'}
+              </p>
+            </div>
+
+            {onOpenTrailerModal && (
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {hasVerifiedTrailer && (
+                  <button
+                    type="button"
+                    onClick={() => launchTrailerModal('view_or_flag')}
+                    className="px-3.5 py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-rose-500/40 text-rose-300 hover:text-white text-xs font-mono font-semibold flex items-center gap-1.5"
+                  >
+                    <Flag className="w-3.5 h-3.5" />
+                    <span>View / Flag</span>
+                  </button>
+                )}
+                {(!hasVerifiedTrailer || openSlotKinds.length > 0 || isBrokenTrailer) && (
+                  <button
+                    type="button"
+                    onClick={() => launchTrailerModal('submit')}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-[#0b0d1a] text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_16px_rgba(245,158,11,0.35)]"
+                  >
+                    <Coins className="w-3.5 h-3.5" />
+                    <span>
+                      {isBrokenTrailer
+                        ? 'Replace Trailer (+10)'
+                        : hasVerifiedTrailer
+                        ? `Add Open Slot (+${topOpenSlotReward})`
+                        : 'Add Official Trailer (+25 Tokens)'}
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Live Countdown Row */}

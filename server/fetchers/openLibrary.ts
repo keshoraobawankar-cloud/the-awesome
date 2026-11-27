@@ -28,6 +28,7 @@ export async function fetchOpenLibraryReleases(): Promise<DropTitle[]> {
         const futureDate = new Date(Date.now() + daysRemaining * 24 * 60 * 60 * 1000);
         const dateStr = futureDate.toISOString().split('T')[0];
 
+        const popularityScore = Math.max(70, 86 - index * 3);
         drops.push({
           id: `openlib-${work.key ? work.key.replace(/\//g, '-') : index}`,
           name: title,
@@ -41,6 +42,8 @@ export async function fetchOpenLibraryReleases(): Promise<DropTitle[]> {
           tagline: `By ${author} • Trending Literary Edition`,
           description: `Acclaimed publication entering the international literary spotlight. First edition release with exclusive author commentary.`,
           image: coverUrl,
+          popularityScore,
+          isPopular: popularityScore >= 80,
           source: 'openlibrary',
           sourceId: work.key,
           sourceUrl: work.key ? `https://openlibrary.org${work.key}` : undefined,

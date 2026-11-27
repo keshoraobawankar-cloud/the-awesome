@@ -1,12 +1,14 @@
 import React from 'react';
-import { Search, Bell, BellRing, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, PlusCircle, Clapperboard } from 'lucide-react';
+import { Search, Bell, BellRing, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, PlusCircle, Clapperboard, Coins } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { useDropData } from '../../context/DropDataContext';
 
 interface DropNavbarProps {
   onOpenSearch: () => void;
   onOpenWatchlist: () => void;
   onOpenUserUpdates?: () => void;
+  onOpenTokens?: () => void;
   selectedCategory: string;
   onSelectCategory: (cat: string) => void;
   onScrollToSection: (sectionId: string) => void;
@@ -16,12 +18,14 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
   onOpenSearch,
   onOpenWatchlist,
   onOpenUserUpdates,
+  onOpenTokens,
   selectedCategory,
   onSelectCategory,
   onScrollToSection
 }) => {
   const { watchlistIds } = useBugle();
   const { rules, unreadCount, setIsDrawerOpen } = useNotifications();
+  const { myTokens } = useDropData();
   const activeAlertsCount = rules.filter((r) => r.enabled).length;
 
   const categories = [
@@ -97,12 +101,26 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
 
           {/* Right Action Tools */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Token Balance Button */}
+            {onOpenTokens && (
+              <button
+                onClick={onOpenTokens}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300 hover:text-white text-xs sm:text-sm font-mono font-bold transition-all shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                title="Earn tokens by adding official trailers to releases"
+                aria-label="Open Trailer Scout Tokens"
+              >
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span>{myTokens}</span>
+                <span className="hidden xl:inline text-[10px] text-amber-200/80 uppercase">Tokens</span>
+              </button>
+            )}
+
             {/* Submit Update Button ("user should give updates") */}
             {onOpenUserUpdates && (
               <button
                 onClick={onOpenUserUpdates}
                 className="flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 via-blue-500/20 to-indigo-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs sm:text-sm font-inter font-medium transition-all shadow-[0_0_12px_rgba(34,211,238,0.2)] group"
-                title="Submit a release update, date delay, or scoop"
+                title="Submit a release update, official trailer, date delay, or scoop"
               >
                 <PlusCircle className="w-4 h-4 text-cyan-400 group-hover:rotate-90 transition-transform" />
                 <span className="hidden sm:inline">Submit Update</span>

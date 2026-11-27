@@ -127,8 +127,10 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
       const data = await animeRes.json();
       const mediaList: AniListMedia[] = data?.data?.Page?.media || [];
 
-      for (const item of mediaList) {
+      for (let idx = 0; idx < mediaList.length; idx++) {
+        const item = mediaList[idx];
         const titleName = item.title?.english || item.title?.romaji || 'Upcoming Anime';
+        const popularityScore = Math.max(72, 94 - idx * 3);
         
         let dateStr = '';
         let daysRemaining = 30;
@@ -178,6 +180,8 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
           tagline: item.genres?.slice(0, 3).join(' • ') || 'Upcoming Broadcast Season',
           description: stripHtml(item.description).slice(0, 180) + '...',
           image: item.coverImage?.extraLarge || item.coverImage?.large,
+          popularityScore,
+          isPopular: popularityScore >= 80,
           source: 'anilist',
           sourceId: String(item.id),
           sourceUrl: item.siteUrl,
@@ -207,8 +211,10 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
       const data = await mangaRes.json();
       const mediaList: AniListMedia[] = data?.data?.Page?.media || [];
 
-      for (const item of mediaList) {
+      for (let idx = 0; idx < mediaList.length; idx++) {
+        const item = mediaList[idx];
         const titleName = item.title?.english || item.title?.romaji || 'Upcoming Manga';
+        const popularityScore = Math.max(70, 88 - idx * 3);
         
         let dateStr = '';
         let daysRemaining = 40;
@@ -239,6 +245,8 @@ export async function fetchAniListReleases(): Promise<DropTitle[]> {
           tagline: item.genres?.slice(0, 3).join(' • ') || 'Anticipated Serialization',
           description: stripHtml(item.description).slice(0, 180) + '...',
           image: item.coverImage?.extraLarge || item.coverImage?.large,
+          popularityScore,
+          isPopular: popularityScore >= 80,
           source: 'anilist',
           sourceId: String(item.id),
           sourceUrl: item.siteUrl,

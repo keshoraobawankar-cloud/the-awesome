@@ -507,6 +507,9 @@ export async function fetchCinemaMovies(): Promise<DropTitle[]> {
       movie.studio ? movie.studio.slice(0, 45) : ''
     ].filter(Boolean);
 
+    const notability = scoreMovieNotability(movie);
+    const popularityScore = Math.max(70, Math.min(95, 68 + notability * 4 + (wdTrailer ? 5 : 0)));
+
     return {
       id: `wiki-${movie.industry.toLowerCase()}-${slugify(movie.title)}-${movie.year}`,
       name: movie.title,
@@ -525,6 +528,8 @@ export async function fetchCinemaMovies(): Promise<DropTitle[]> {
         summary.description ||
         `${movie.title} is an upcoming ${movie.industry} feature scheduled for ${movie.date} (${movie.studio}).${movie.castAndCrew ? ` Featuring ${movie.castAndCrew}.` : ''}`,
       image: summary.image || defaultImg,
+      popularityScore,
+      isPopular: popularityScore >= 80,
       source: 'wikipedia',
       sourceId: movie.wikiSlug || slugify(movie.title),
       sourceUrl:

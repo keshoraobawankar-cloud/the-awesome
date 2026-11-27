@@ -3,6 +3,7 @@ import { fetchAniListReleases } from './fetchers/anilist';
 import { fetchOpenLibraryReleases } from './fetchers/openLibrary';
 import { fetchTMDBReleases } from './fetchers/tmdb';
 import { fetchCinemaMovies } from './fetchers/cinemaMovies';
+import { fetchUpcomingPopularGames } from './fetchers/games';
 import { fetchLiveNewsFeeds } from './fetchers/rssNews';
 
 function slugify(text: string): string {
@@ -74,7 +75,23 @@ export async function runFullSync(isManual = false): Promise<{
       if (res.dateChanged) dateChangesCount++;
     }
 
-    // 4. Fetch Live Entertainment News Wire
+    // 5. Fetch Upcoming Popular Games (Steam Coming Soon + Wikidata)
+    db.addLog('info', 'Scanning upcoming popular games on Steam & Wikidata...');
+    const gameDrops = await fetchUpcomingPopularGames();
+    for (const drop of gameDrops) {
+      const res = db.upsertDrop(drop, true);
+      if (res.status === 'added') addedCount++;
+      if (res.status === 'updated') updatedCount++;
+      if (res.status === 'skipped_locked') skippedLockedCount++;
+      if (res.dateChanged) dateChangesCount++;
+    }
+    const topHero = db.syncHeroSpotlight(true);
+    db.addLog(
+      'success',
+      `Popular games sync processed: ${gameDrops.length} upcoming games evaluated. Top trending spotlight: "${topHero.name}" [${topHero.category}].`
+    );
+
+    // 6. Fetch Live Entertainment News Wire
     db.addLog('info', 'Parsing live entertainment wire headlines...');
     const newsCards = await fetchLiveNewsFeeds();
     if (newsCards.length > 0) {

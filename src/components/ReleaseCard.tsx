@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ReleaseItem } from '../data/releases';
 import { CountdownClock } from './CountdownClock';
 import { Calendar, Bookmark, BookOpen, ExternalLink, Sparkles, Film, Gamepad2, Tv, FileText } from 'lucide-react';
+import { FormatBadge, inferMovieFormats } from './DropRadar/FormatBadge';
 
 interface ReleaseCardProps {
   item: ReleaseItem;
@@ -105,6 +106,17 @@ export const ReleaseCard: React.FC<ReleaseCardProps> = ({
           >
             {item.title}
           </h3>
+
+          {item.category === 'Movies' && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              {inferMovieFormats({
+                platform: item.platform,
+                description: item.description
+              }).map((fmt) => (
+                <FormatBadge key={fmt} format={fmt} size="xs" />
+              ))}
+            </div>
+          )}
 
           {/* Creator / Author / Director */}
           {item.creatorOrAuthor && (

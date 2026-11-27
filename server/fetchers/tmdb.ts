@@ -55,6 +55,8 @@ export async function fetchTMDBReleases(): Promise<DropTitle[]> {
         tagline: 'Miles Morales faces his darkest cross-dimensional destiny.',
         description: 'Sony Pictures Animation returns to conclude the Oscar-winning animated trilogy with revolutionary multi-style visuals.',
         image: 'https://images.unsplash.com/photo-1635805737707-575885ab0820?w=1200&auto=format&fit=crop&q=80',
+        popularityScore: 96,
+        isPopular: true,
         source: 'curated',
         trustedSourceLabel: 'Sony Pictures / Official Slate',
         sourceUrl: 'https://www.sonypictures.com/',
@@ -74,6 +76,8 @@ export async function fetchTMDBReleases(): Promise<DropTitle[]> {
         tagline: 'Robert Downey Jr. returns as Victor von Doom.',
         description: 'Directed by the Russo Brothers, the Marvel Cinematic Universe converges for an unprecedented showdown against Doctor Doom.',
         image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=1200&auto=format&fit=crop&q=80',
+        popularityScore: 98,
+        isPopular: true,
         source: 'curated',
         trustedSourceLabel: 'Marvel Studios / Official Slate',
         trailerUrl: 'https://www.youtube.com/watch?v=irVNGjRFZGk',
@@ -94,6 +98,8 @@ export async function fetchTMDBReleases(): Promise<DropTitle[]> {
         tagline: 'The final game decides the fate of the Front Man and Gi-hun.',
         description: 'Hwang Dong-hyuk delivers the explosive closing chapter of the global streaming sensation in a lethal high-stakes winter premiere.',
         image: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=1200&auto=format&fit=crop&q=80',
+        popularityScore: 95,
+        isPopular: true,
         source: 'curated',
         trustedSourceLabel: 'Netflix Official',
         trailerUrl: 'https://www.youtube.com/watch?v=Lb6v6AUFWrM',
@@ -143,6 +149,7 @@ export async function fetchTMDBReleases(): Promise<DropTitle[]> {
           ? `https://image.tmdb.org/t/p/w780${item.poster_path}`
           : undefined;
 
+        const popularityScore = Math.max(76, 95 - i * 3);
         drops.push({
           id: `tmdb-${q.industry.toLowerCase()}-${item.id}`,
           name: title,
@@ -157,6 +164,8 @@ export async function fetchTMDBReleases(): Promise<DropTitle[]> {
           tagline: `${q.industry} • TMDB Score: ${item.vote_average ? item.vote_average.toFixed(1) : 'Anticipated'}`,
           description: item.overview ? item.overview.slice(0, 200) + '...' : `Upcoming ${q.industry} theatrical release verified on TMDB.`,
           image: posterUrl,
+          popularityScore,
+          isPopular: popularityScore >= 80,
           source: 'tmdb',
           trustedSourceLabel: 'TMDB Official API',
           sourceId: String(item.id),

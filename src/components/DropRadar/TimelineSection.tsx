@@ -4,6 +4,7 @@ import { THIS_WEEK_TIMELINE, TimelineDrop, DROP_TITLES_12, DropTitle } from '../
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { FormatBadge, inferMovieFormats } from './FormatBadge';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import confetti from 'canvas-confetti';
@@ -12,9 +13,15 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface TimelineSectionProps {
   onOpenModal: (drop: DropTitle) => void;
+  selectedCategory?: string;
+  onSelectCategory?: (cat: string) => void;
 }
 
-export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal }) => {
+export const TimelineSection: React.FC<TimelineSectionProps> = ({
+  onOpenModal,
+  selectedCategory = 'All',
+  onSelectCategory
+}) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<HTMLDivElement[]>([]);
@@ -25,7 +32,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
   const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
 
   const timelineItems = useMemo(() => {
-    return THIS_WEEK_TIMELINE.map((item) => {
+    const mapped = THIS_WEEK_TIMELINE.map((item) => {
       const liveMatch = allDrops.find(
         (d) =>
           d.id === item.id ||
@@ -39,7 +46,12 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
         platform: liveMatch.platform || item.platform
       };
     });
-  }, [allDrops]);
+    if (!selectedCategory || selectedCategory === 'All') return mapped;
+    const filtered = mapped.filter(
+      (item) => item.category.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    return filtered.length > 0 ? filtered : mapped;
+  }, [allDrops, selectedCategory]);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -54,7 +66,8 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
             trigger: sectionRef.current,
             start: 'top 70%',
             end: 'bottom 85%',
-            scrub: true
+            scrub: true,
+            invalidateOnRefresh: true
           }
         }
       );
@@ -155,6 +168,27 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
           <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto font-inter mt-3">
             Watch the central trajectory line calibrate as you scroll down. Alternating daily drops, confirmed platforms, and early pre-loads.
           </p>
+          {onSelectCategory && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
+              {['All', 'Movies', 'Games', 'Books'].map((cat) => {
+                const active = selectedCategory.toLowerCase() === cat.toLowerCase();
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => onSelectCategory(cat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                      active
+                        ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/60 font-semibold'
+                        : 'bg-[#121528] text-slate-400 hover:text-white border border-[#252846]'
+                    }`}
+                  >
+                    {cat === 'All' ? 'All Sectors' : cat}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Timeline Container with Center Glowing Line */}
@@ -213,6 +247,18 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({ onOpenModal })
                       <h3 className="font-bebas text-2xl sm:text-3xl text-white group-hover:text-cyan-300 transition-colors tracking-wide mb-2">
                         {drop.title}
                       </h3>
+
+                      {drop.category === 'Movies' && (
+                        <div
+                          className={`flex flex-wrap items-center gap-1.5 mb-2.5 ${
+                            isLeft ? 'md:justify-end' : 'md:justify-start'
+                          }`}
+                        >
+                          {inferMovieFormats(matchingDrop).map((fmt) => (
+                            <FormatBadge key={fmt} format={fmt} size="xs" />
+                          ))}
+                        </div>
+                      )}
 
                       {/* Highlight Deck */}
                       <p className="text-sm text-slate-300 font-inter mb-4 line-clamp-2">

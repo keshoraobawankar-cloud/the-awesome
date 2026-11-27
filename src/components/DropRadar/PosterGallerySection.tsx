@@ -4,6 +4,7 @@ import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { FormatBadge, inferMovieFormats } from './FormatBadge';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -30,44 +31,59 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Column 1: Slow speed (-120px)
-      gsap.to(col1Ref.current, {
-        y: -120,
-        rotation: -1.5,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1
+      // Column 1: Slow speed
+      gsap.fromTo(
+        col1Ref.current,
+        { y: 20, rotation: 0 },
+        {
+          y: -40,
+          rotation: -1.0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1,
+            invalidateOnRefresh: true
+          }
         }
-      });
+      );
 
-      // Column 2: Fast speed (-340px) with slight reverse rotation
-      gsap.to(col2Ref.current, {
-        y: -340,
-        rotation: 1.5,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 0.8
+      // Column 2: Fast speed with slight reverse rotation
+      gsap.fromTo(
+        col2Ref.current,
+        { y: 60, rotation: 0 },
+        {
+          y: -110,
+          rotation: 1.0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 0.8,
+            invalidateOnRefresh: true
+          }
         }
-      });
+      );
 
-      // Column 3: Medium speed (-220px)
-      gsap.to(col3Ref.current, {
-        y: -220,
-        rotation: -1.0,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top bottom',
-          end: 'bottom top',
-          scrub: 1.2
+      // Column 3: Medium speed
+      gsap.fromTo(
+        col3Ref.current,
+        { y: 35, rotation: 0 },
+        {
+          y: -70,
+          rotation: -0.75,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1.2,
+            invalidateOnRefresh: true
+          }
         }
-      });
+      );
     }, sectionRef);
 
     return () => ctx.revert();
@@ -99,26 +115,28 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
         </div>
 
         {/* 3-Column Parallax Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-          {/* Column 1 (Slow) */}
-          <div ref={col1Ref} className="space-y-8 will-change-transform">
-            {col1.map((drop) => (
-              <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
-            ))}
-          </div>
+        <div className="overflow-hidden pt-12 pb-8 -mx-2 px-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {/* Column 1 (Slow) */}
+            <div ref={col1Ref} className="space-y-8 will-change-transform">
+              {col1.map((drop) => (
+                <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
+              ))}
+            </div>
 
-          {/* Column 2 (Fast) */}
-          <div ref={col2Ref} className="space-y-8 will-change-transform md:pt-12">
-            {col2.map((drop) => (
-              <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
-            ))}
-          </div>
+            {/* Column 2 (Fast) */}
+            <div ref={col2Ref} className="space-y-8 will-change-transform md:pt-12">
+              {col2.map((drop) => (
+                <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
+              ))}
+            </div>
 
-          {/* Column 3 (Medium) */}
-          <div ref={col3Ref} className="space-y-8 will-change-transform md:pt-6">
-            {col3.map((drop) => (
-              <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
-            ))}
+            {/* Column 3 (Medium) */}
+            <div ref={col3Ref} className="space-y-8 will-change-transform md:pt-6">
+              {col3.map((drop) => (
+                <PosterCard key={drop.id} drop={drop} onOpen={() => onOpenModal(drop)} />
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -213,6 +231,13 @@ const PosterCard: React.FC<{ drop: DropTitle; onOpen: () => void }> = ({ drop, o
         <h3 className="font-bebas text-2xl text-white group-hover:text-cyan-300 transition-colors tracking-wide truncate mb-1">
           {drop.name}
         </h3>
+        {drop.category === 'Movies' && (
+          <div className="flex flex-wrap items-center gap-1.5 mb-2">
+            {inferMovieFormats(drop).map((fmt) => (
+              <FormatBadge key={fmt} format={fmt} size="xs" />
+            ))}
+          </div>
+        )}
         <p className="text-xs text-slate-400 font-inter line-clamp-1 mb-3">
           {drop.tagline}
         </p>

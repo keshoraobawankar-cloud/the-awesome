@@ -5,47 +5,48 @@ import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { db } from './server/db';
 import { runFullSync, startScheduledSyncEngine, restartScheduledSyncEngine } from './server/syncEngine';
-import { DropTitle } from './server/types';
+import { DropTitle, TrailerType, TrailerKind } from './server/types';
+import { normalizeYouTubeUrl, verifyYouTubeTrailerMetadata } from './server/trailerValidator';
+import { SlidingWindowRateLimiter, RateLimitConfig } from './server/rateLimiter';
+import { computeBasePopularity } from './server/trending';
+import { trailerKindToLabel, trailerTypeToKind } from './src/utils/youtube';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function parseOfficialTrailerUrl(rawUrl?: string): {
-  trailerUrl?: string;
-  trailerEmbedUrl?: string;
-  trailerSource?: string;
-} {
-  if (!rawUrl || typeof rawUrl !== 'string') return {};
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return {};
-
-  const ytMatch = trimmed.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/
-  );
-  if (ytMatch?.[1]) {
-    const id = ytMatch[1];
-    return {
-      trailerUrl: `https://www.youtube.com/watch?v=${id}`,
-      trailerEmbedUrl: `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`,
-      trailerSource: 'Official YouTube Channel'
-    };
+function getSessionKey(req: express.Request): string {
+  const headerId = req.headers['x-session-id'];
+  if (typeof headerId === 'string' && headerId.trim()) {
+    return headerId.trim().slice(0, 64);
   }
+  const forwarded = req.headers['x-forwarded-for'];
+  const ip = (typeof forwarded === 'string' ? forwarded.split(',')[0] : req.ip) || 'local';
+  return ip.trim().slice(0, 64);
+}
 
-  const dmMatch = trimmed.match(/dailymotion\.com\/(?:video|embed\/video)\/([A-Za-z0-9]+)/);
-  if (dmMatch?.[1]) {
-    return {
-      trailerUrl: `https://www.dailymotion.com/video/${dmMatch[1]}`,
-      trailerEmbedUrl: `https://www.dailymotion.com/embed/video/${dmMatch[1]}?autoplay=1`,
-      trailerSource: 'Official Dailymotion Channel'
-    };
-  }
+const trailerLimiter = new SlidingWindowRateLimiter();
 
-  return {
-    trailerUrl: trimmed,
-    trailerSource: 'Official Source Link'
-  };
+// Separate sliding-window buckets for submissions vs. moderator rejections
+const SUBMISSION_LIMIT: RateLimitConfig = {
+  maxRequests: 5,
+  windowMs: 10 * 60 * 1000
+};
+
+const REJECTION_LIMIT: RateLimitConfig = {
+  maxRequests: 20,
+  windowMs: 5 * 60 * 1000
+};
+
+function resolveRateLimitActor(req: express.Request): string {
+  const fromHeader = req.header('x-user-id')?.trim();
+  const fromBodyUser = typeof req.body?.userId === 'string' ? req.body.userId.trim() : '';
+  const fromBodySub = typeof req.body?.submittedBy === 'string' ? req.body.submittedBy.trim() : '';
+  const userId = (fromHeader || fromBodyUser || fromBodySub || 'default-user').toLowerCase().slice(0, 48);
+  const sessionKey = getSessionKey(req);
+  // Combine userId with session/IP so clearing a handle field cannot bypass limits
+  return `${userId}:${sessionKey}`;
 }
 
 function escapeXml(str: string): string {
@@ -138,7 +139,10 @@ const ALLOWED_IMAGE_PROXY_HOSTS = new Set([
   'image.tmdb.org',
   'images.unsplash.com',
   's4.anilist.co',
-  'covers.openlibrary.org'
+  'covers.openlibrary.org',
+  'shared.akamai.steamstatic.com',
+  'shared.fastly.steamstatic.com',
+  'cdn.akamai.steamstatic.com'
 ]);
 
 async function startServer() {
@@ -167,13 +171,19 @@ async function startServer() {
     res.json({
       drops,
       total: drops.length,
-      hero: db.getHeroDrop()
+      hero: db.getHeroDrop(),
+      trendingDrops: db.getFeaturedTrendingDrops(5),
+      featuredGames: db.getFeaturedUpcomingGames(4)
     });
   });
 
   // 2. Get hero drop
   app.get('/api/hero', (_req, res) => {
-    res.json(db.getHeroDrop());
+    res.json({
+      ...db.getHeroDrop(),
+      trendingDrops: db.getFeaturedTrendingDrops(5),
+      featuredGames: db.getFeaturedUpcomingGames(4)
+    });
   });
 
   // 3. Get news cards
@@ -242,8 +252,8 @@ async function startServer() {
   });
 
   // 6. Manual drop entry (Indie / regional / editorial release)
-  app.post('/api/drops', (req, res) => {
-    const { name, category, date, platform, description, tagline, status, lockField, trailerUrl } = req.body;
+  app.post('/api/drops', async (req, res) => {
+    const { name, category, date, platform, description, tagline, status, lockField, trailerUrl, submittedBy } = req.body;
 
     if (!name || !category || !date) {
       return res.status(400).json({ error: 'Name, category, and date are required.' });
@@ -263,7 +273,16 @@ async function startServer() {
     };
 
     const styling = categoryGradients[category] || categoryGradients.Movies;
-    const parsedTrailer = parseOfficialTrailerUrl(trailerUrl);
+    const contributor = typeof submittedBy === 'string' && submittedBy.trim() ? submittedBy.trim().slice(0, 40) : 'Trailer Scout';
+
+    const popularityScore = computeBasePopularity({
+      name,
+      category,
+      hasTrailer: Boolean(typeof trailerUrl === 'string' && trailerUrl.trim()),
+      status: status || 'Confirmed',
+      source: 'manual',
+      explicitScore: 84
+    });
 
     const newDrop: DropTitle = {
       id,
@@ -277,21 +296,38 @@ async function startServer() {
       accent: styling.accent,
       tagline: tagline || 'Indie / Editorial Verified Release',
       description: description || 'Manually cataloged release entry.',
+      popularityScore,
+      isPopular: popularityScore >= 78,
       source: 'manual',
-      trailerUrl: parsedTrailer.trailerUrl,
-      trailerEmbedUrl: parsedTrailer.trailerEmbedUrl,
-      trailerSource: parsedTrailer.trailerSource,
       locked: lockField !== false, // Locked by default so auto-fetchers won't clobber it
       updatedAt: new Date().toISOString()
     };
 
     db.upsertDrop(newDrop, false);
+
+    let tokensAwarded = 0;
+    let trailerOutcome: string | undefined;
+    if (typeof trailerUrl === 'string' && trailerUrl.trim()) {
+      const trailerResult = await db.submitOfficialTrailer({
+        dropId: id,
+        trailerUrl: trailerUrl.trim(),
+        trailerType: 'Official Trailer',
+        submittedBy: contributor,
+        userConfirmedOfficial: true,
+        sessionKey: getSessionKey(req)
+      });
+      tokensAwarded = trailerResult.tokensAwarded || 0;
+      trailerOutcome = trailerResult.outcome;
+    }
+
     db.addLog('info', `Added manual release: "${name}" (${category}) [Locked: ${newDrop.locked}]`);
     db.notifyChange('drop_added');
 
     res.status(201).json({
       success: true,
-      drop: newDrop,
+      drop: db.getDropById(id) || newDrop,
+      tokensAwarded,
+      trailerOutcome,
       allDrops: db.getDrops()
     });
   });
@@ -359,7 +395,8 @@ async function startServer() {
         success: true,
         trailerUrl: drop.trailerUrl,
         trailerEmbedUrl: drop.trailerEmbedUrl,
-        trailerSource: drop.trailerSource || 'Official Channel'
+        trailerSource: drop.trailerSource || 'Official Channel',
+        trailers: drop.trailers || []
       });
     }
 
@@ -465,29 +502,176 @@ async function startServer() {
     });
   });
 
-  // 9c. Attach/update official trailer URL manually
-  app.patch('/api/drops/:id/trailer', (req, res) => {
+  // 9c. Attach official trailer URL with automated URL/metadata validation & idempotent token crediting
+  const handleSubmitOfficialTrailer = async (req: express.Request, res: express.Response) => {
+    const actorKey = resolveRateLimitActor(req);
+    const rateCheck = trailerLimiter.consume(`trailer:submit:${actorKey}`, SUBMISSION_LIMIT);
+    res.setHeader('X-RateLimit-Remaining', String(rateCheck.remaining));
+
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        outcome: 'rate_limited',
+        error: `Too many trailer submissions. Please wait ${rateCheck.retryAfterSeconds}s before trying again.`,
+        retryAfterSeconds: rateCheck.retryAfterSeconds
+      });
+    }
+
     const { id } = req.params;
-    const { trailerUrl, trailerSource } = req.body || {};
-    const drop = db.getDropById(id);
-    if (!drop) {
-      return res.status(404).json({ error: 'Drop not found.' });
+    const { trailerUrl, trailerType, kind, submittedBy, userConfirmedOfficial } = req.body || {};
+
+    const validTrailerTypes: TrailerType[] = [
+      'Official Teaser',
+      'Official Trailer',
+      'Gameplay / Overview',
+      'Final Trailer'
+    ];
+    const validKinds: TrailerKind[] = ['teaser', 'official_trailer', 'gameplay', 'launch_trailer'];
+    const safeKind: TrailerKind = validKinds.includes(kind)
+      ? kind
+      : trailerTypeToKind(validTrailerTypes.includes(trailerType) ? trailerType : 'Official Trailer');
+    const safeType: TrailerType = validTrailerTypes.includes(trailerType)
+      ? trailerType
+      : trailerKindToLabel(safeKind);
+
+    const result = await db.submitOfficialTrailer({
+      dropId: id,
+      trailerUrl,
+      kind: safeKind,
+      trailerType: safeType,
+      submittedBy,
+      userConfirmedOfficial,
+      sessionKey: getSessionKey(req)
+    });
+
+    if (result.httpStatus === 429) {
+      res.setHeader('Retry-After', '60');
     }
-    const parsed = parseOfficialTrailerUrl(trailerUrl);
-    if (!parsed.trailerUrl) {
-      return res.status(400).json({ error: 'Valid official trailer URL is required.' });
+
+    return res.status(result.httpStatus).json({
+      success: result.success,
+      outcome: result.outcome,
+      tokensAwarded: result.tokensAwarded,
+      tokensHeld: result.tokensHeld,
+      alreadyAttached: result.alreadyAttached,
+      message: result.message,
+      error: result.error,
+      retryAfterSeconds: result.httpStatus === 429 ? 60 : undefined,
+      submission: result.submission,
+      verification: result.verification,
+      drop: result.drop,
+      tokenSummary: result.tokenSummary
+    });
+  };
+
+  app.patch('/api/drops/:id/trailer', handleSubmitOfficialTrailer);
+  app.post('/api/drops/:id/trailer', handleSubmitOfficialTrailer);
+
+  // 9c-2. Flag an outdated or broken trailer link instead of duplicate farming
+  app.post('/api/drops/:id/trailer/flag', (req, res) => {
+    const { id } = req.params;
+    const { flaggedBy, reason, kind, videoId } = req.body || {};
+    const validKinds: TrailerKind[] = ['teaser', 'official_trailer', 'gameplay', 'launch_trailer'];
+    const safeKind = validKinds.includes(kind) ? kind : undefined;
+    const result = db.flagBrokenTrailer({
+      dropId: id,
+      flaggedBy: typeof flaggedBy === 'string' ? flaggedBy : 'Community Scout',
+      reason: typeof reason === 'string' && reason.trim() ? reason.trim() : 'Broken or unavailable video link',
+      kind: safeKind,
+      videoId: typeof videoId === 'string' && videoId.trim() ? videoId.trim() : undefined
+    });
+    if (!result.success) {
+      return res.status(400).json({ success: false, error: result.message });
     }
-    db.upsertDrop(
-      {
-        ...drop,
-        trailerUrl: parsed.trailerUrl,
-        trailerEmbedUrl: parsed.trailerEmbedUrl,
-        trailerSource: trailerSource || parsed.trailerSource
-      },
-      false
-    );
-    db.notifyChange('drop_trailer_updated');
-    res.json({ success: true, drop: db.getDropById(id) });
+    return res.json({
+      success: true,
+      message: result.message,
+      drop: result.drop
+    });
+  });
+
+  // 9c-3. Approve or reject a pending_review trailer submission (atomic & idempotent)
+  const handleApprovePendingTrailer = (req: express.Request, res: express.Response) => {
+    const { submissionId } = req.params;
+    const replaceExisting = Boolean(req.body?.replaceExisting);
+    const result = db.reviewTrailerSubmission(submissionId, 'approve', undefined, { replaceExisting });
+    if (!result.submission) {
+      return res.status(404).json({ success: false, error: result.message });
+    }
+    if (result.conflict) {
+      return res.status(409).json({
+        success: false,
+        conflict: true,
+        alreadyProcessed: false,
+        tokensAwarded: 0,
+        walletBalance: result.walletBalance ?? 0,
+        error: result.message,
+        drop: result.drop,
+        submission: result.submission
+      });
+    }
+    const contributor = typeof req.query.contributor === 'string' ? req.query.contributor : result.submission?.submittedBy;
+    return res.json({
+      success: true,
+      alreadyProcessed: Boolean(result.alreadyProcessed),
+      message: result.message,
+      tokensAwarded: result.tokensAwarded,
+      walletBalance: result.walletBalance ?? 0,
+      submission: result.submission,
+      drop: result.drop,
+      tokenSummary: db.getTokenSummary(contributor, getSessionKey(req))
+    });
+  };
+
+  app.post('/api/trailers/:submissionId/approve', handleApprovePendingTrailer);
+  app.post('/api/trailer-submissions/:submissionId/approve', handleApprovePendingTrailer);
+
+  const handleRejectPendingTrailer = (req: express.Request, res: express.Response) => {
+    const actorKey = resolveRateLimitActor(req);
+    const rateCheck = trailerLimiter.consume(`trailer:reject:${actorKey}`, REJECTION_LIMIT);
+    res.setHeader('X-RateLimit-Remaining', String(rateCheck.remaining));
+
+    if (!rateCheck.allowed) {
+      res.setHeader('Retry-After', String(rateCheck.retryAfterSeconds));
+      return res.status(429).json({
+        success: false,
+        error: `Rejection rate limit reached. Retry in ${rateCheck.retryAfterSeconds}s.`,
+        retryAfterSeconds: rateCheck.retryAfterSeconds
+      });
+    }
+
+    const { submissionId } = req.params;
+    const reason =
+      typeof req.body?.reason === 'string' && req.body.reason.trim()
+        ? req.body.reason.trim()
+        : undefined;
+    const result = db.reviewTrailerSubmission(submissionId, 'reject', reason);
+    if (!result.submission) {
+      return res.status(404).json({ success: false, error: result.message });
+    }
+    const contributor = typeof req.query.contributor === 'string' ? req.query.contributor : result.submission?.submittedBy;
+    return res.json({
+      success: true,
+      alreadyProcessed: Boolean(result.alreadyProcessed),
+      message: result.message,
+      tokensAwarded: 0,
+      walletBalance: result.walletBalance ?? 0,
+      submission: result.submission,
+      tokenSummary: db.getTokenSummary(contributor, getSessionKey(req))
+    });
+  };
+
+  app.post('/api/trailers/:submissionId/reject', handleRejectPendingTrailer);
+  app.post('/api/trailer-submissions/:submissionId/reject', handleRejectPendingTrailer);
+
+  // 9d. Token Rewards & Leaderboard
+  app.get('/api/tokens', (req, res) => {
+    const contributor = typeof req.query.contributor === 'string' ? req.query.contributor : undefined;
+    res.json({
+      success: true,
+      ...db.getTokenSummary(contributor, getSessionKey(req))
+    });
   });
 
   // 10. News Approval Queue (Drafts -> Editorial Review -> Published)
@@ -549,14 +733,81 @@ async function startServer() {
     });
   });
 
-  app.post('/api/user-updates', (req, res) => {
+  app.post('/api/user-updates', async (req, res) => {
     const { 
       targetTitleId, targetTitleName, updateType, suggestedDate, 
-      suggestedStatus, category, platform, details, sourceUrl, submittedBy 
+      suggestedStatus, category, platform, details, sourceUrl, trailerUrl, submittedBy 
     } = req.body;
 
     if (!targetTitleName || !details || !updateType || !category) {
       return res.status(400).json({ error: 'targetTitleName, category, updateType, and details are required.' });
+    }
+
+    const contributor = (submittedBy || 'Trailer Scout').trim().slice(0, 40) || 'Trailer Scout';
+    const rawTrailer = (trailerUrl || (updateType === 'official_trailer' ? sourceUrl : '') || '').trim();
+    const targetDrop =
+      (targetTitleId ? db.getDropById(targetTitleId) : undefined) ||
+      db.getDrops().find((d) => d.name.toLowerCase() === targetTitleName.trim().toLowerCase());
+
+    let tokensAwarded = 0;
+    let tokensHeld = 0;
+    let trailerOutcome: string | undefined;
+    let canonicalTrailerUrl: string | undefined;
+
+    if (updateType === 'official_trailer' || rawTrailer) {
+      if (targetDrop) {
+        const trailerResult = await db.submitOfficialTrailer({
+          dropId: targetDrop.id,
+          trailerUrl: rawTrailer,
+          trailerType: 'Official Trailer',
+          submittedBy: contributor,
+          userConfirmedOfficial: true,
+          sessionKey: getSessionKey(req)
+        });
+        if (!trailerResult.success) {
+          return res.status(trailerResult.httpStatus).json({
+            success: false,
+            error: trailerResult.error || trailerResult.message || 'Trailer validation failed.'
+          });
+        }
+        tokensAwarded = trailerResult.tokensAwarded;
+        tokensHeld = trailerResult.tokensHeld;
+        trailerOutcome = trailerResult.outcome;
+        canonicalTrailerUrl = trailerResult.submission?.canonicalUrl || rawTrailer;
+      } else {
+        const normalized = normalizeYouTubeUrl(rawTrailer);
+        if (!normalized.valid || !normalized.videoId || !normalized.canonicalUrl) {
+          return res.status(400).json({ error: normalized.error || 'Please enter a valid YouTube trailer URL.' });
+        }
+        canonicalTrailerUrl = normalized.canonicalUrl;
+        const verification = await verifyYouTubeTrailerMetadata({
+          videoId: normalized.videoId,
+          dropName: targetTitleName.trim(),
+          trailerType: 'Official Trailer'
+        });
+        if (verification.outcome === 'rejected') {
+          return res.status(422).json({ error: verification.reason });
+        }
+        trailerOutcome = verification.outcome;
+        if (verification.outcome === 'verified') {
+          const rewardId = `${contributor.toLowerCase()}::unlisted::${targetTitleName.trim().toLowerCase()}::${normalized.videoId}`;
+          const { idempotentDuplicate } = db.awardTokens({
+            contributorName: contributor,
+            tokensEarned: 25,
+            rewardId,
+            rewardType: 'new_trailer',
+            status: 'credited',
+            reason: `Verified official trailer scoop for "${targetTitleName.trim()}"`,
+            dropName: targetTitleName.trim(),
+            videoId: normalized.videoId,
+            trailerType: 'Official Trailer',
+            trailerUrl: normalized.canonicalUrl
+          });
+          tokensAwarded = idempotentDuplicate ? 0 : 25;
+        } else {
+          tokensHeld = 25;
+        }
+      }
     }
 
     const newUpdate = db.addUserUpdate({
@@ -569,13 +820,23 @@ async function startServer() {
       platform,
       details,
       sourceUrl,
-      submittedBy: submittedBy || 'Community Member'
+      trailerUrl: canonicalTrailerUrl || trailerUrl,
+      submittedBy: contributor
     });
+
+    if (trailerOutcome === 'verified') {
+      newUpdate.status = 'applied';
+    }
+
     db.notifyChange('user_update_added');
 
     res.status(201).json({
       success: true,
       update: newUpdate,
+      tokensAwarded,
+      tokensHeld,
+      trailerOutcome,
+      tokenSummary: db.getTokenSummary(contributor, getSessionKey(req)),
       allUpdates: db.getUserUpdates()
     });
   });
