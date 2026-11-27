@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, BellRing, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, PlusCircle, Clapperboard, Coins } from 'lucide-react';
+import { Search, Bell, BellRing, Sparkles, Film, Gamepad2, Tv, BookOpen, Layers, PlusCircle, Clapperboard, Coins, Clock } from 'lucide-react';
 import { useBugle } from '../../context/BugleContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useDropData } from '../../context/DropDataContext';
@@ -35,7 +35,8 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
     { label: 'Games', icon: Gamepad2, id: 'games' },
     { label: 'Dramas', icon: Tv, id: 'dramas' },
     { label: 'Books', icon: BookOpen, id: 'books' },
-    { label: 'Manga', icon: Layers, id: 'manga' }
+    { label: 'Manga', icon: Layers, id: 'manga' },
+    { label: 'Coming Soon', icon: Clock, id: 'coming-soon' }
   ];
 
   return (
@@ -73,9 +74,15 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
                   key={cat.id}
                   onClick={() => {
                     onSelectCategory(cat.label);
-                    onScrollToSection('category-showcase');
+                    if (cat.label === 'Coming Soon') {
+                      if (!isActive) onScrollToSection('timeline');
+                    } else {
+                      onScrollToSection('category-showcase');
+                    }
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-inter font-medium transition-all ${
+                  aria-pressed={isActive}
+                  title={cat.label === 'Coming Soon' ? 'Toggle releases more than 30 days away' : undefined}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-inter font-medium whitespace-nowrap transition-all ${
                     isActive
                       ? 'bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white shadow-[0_0_12px_rgba(255,61,113,0.4)]'
                       : 'text-slate-400 hover:text-white hover:bg-[#252846]/50'
@@ -199,9 +206,14 @@ export const DropNavbar: React.FC<DropNavbarProps> = ({
                 key={cat.id}
                 onClick={() => {
                   onSelectCategory(cat.label);
-                  onScrollToSection('category-showcase');
+                  if (cat.label === 'Coming Soon') {
+                    if (!isActive) onScrollToSection('timeline');
+                  } else {
+                    onScrollToSection('category-showcase');
+                  }
                 }}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-inter font-medium transition-all ${
+                aria-pressed={isActive}
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-inter font-medium whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white'
                     : 'text-slate-400 bg-[#171a30] border border-[#2b3052]'

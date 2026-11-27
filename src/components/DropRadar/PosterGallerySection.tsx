@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Eye, Bell, BellRing, Check, Sparkles } from 'lucide-react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Eye, Bell, BellRing, Check, Sparkles, Clock } from 'lucide-react';
 import { DROP_TITLES_12, DropTitle } from '../../data/dropRadarData';
 import { useBugle } from '../../context/BugleContext';
 import { useDropData } from '../../context/DropDataContext';
@@ -12,16 +12,40 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface PosterGallerySectionProps {
   onOpenModal: (drop: DropTitle) => void;
+  selectedCategory?: string;
+  onSelectCategory?: (cat: string) => void;
 }
 
-export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOpenModal }) => {
+export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({
+  onOpenModal,
+  selectedCategory = 'All',
+  onSelectCategory
+}) => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const col1Ref = useRef<HTMLDivElement>(null);
   const col2Ref = useRef<HTMLDivElement>(null);
   const col3Ref = useRef<HTMLDivElement>(null);
 
   const { drops } = useDropData();
-  const displayDrops = (drops && drops.length >= 6) ? drops : DROP_TITLES_12;
+  const baseDrops = (drops && drops.length >= 6) ? drops : DROP_TITLES_12;
+
+  const comingSoonCount = useMemo(
+    () => baseDrops.filter((d) => d.daysRemaining > 30).length,
+    [baseDrops]
+  );
+
+  const displayDrops = useMemo(() => {
+    if (!selectedCategory || selectedCategory === 'All') {
+      return baseDrops;
+    }
+    if (selectedCategory === 'Coming Soon') {
+      return baseDrops.filter((d) => d.daysRemaining > 30);
+    }
+    const filtered = baseDrops.filter(
+      (d) => d.category.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    return filtered.length > 0 ? filtered : baseDrops;
+  }, [baseDrops, selectedCategory]);
 
   // Divide the titles into 3 columns
   const perCol = Math.ceil(displayDrops.length / 3);
@@ -86,8 +110,9 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
       );
     }, sectionRef);
 
+    ScrollTrigger.refresh();
     return () => ctx.revert();
-  }, []);
+  }, [selectedCategory, displayDrops.length]);
 
   return (
     <section
@@ -112,6 +137,35 @@ export const PosterGallerySection: React.FC<PosterGallerySectionProps> = ({ onOp
           <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto font-inter mt-3">
             Three columns moving at asynchronous velocities. Posters brighten, tilt, and enlarge as you scroll through the focal core.
           </p>
+          {onSelectCategory && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                aria-pressed={selectedCategory === 'Coming Soon'}
+                onClick={() => onSelectCategory('Coming Soon')}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold border transition-all ${
+                  selectedCategory === 'Coming Soon'
+                    ? 'bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white border-transparent shadow-[0_0_14px_rgba(255,61,113,0.4)]'
+                    : 'bg-[#121528] text-slate-300 border-[#252846] hover:border-cyan-400/60 hover:text-white'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Coming Soon (&gt;30 Days)</span>
+                <span className="px-1.5 py-0.5 rounded-full bg-[#0b0d1a]/60 text-[10px]">
+                  {comingSoonCount}
+                </span>
+              </button>
+              {selectedCategory !== 'All' && (
+                <button
+                  type="button"
+                  onClick={() => onSelectCategory('All')}
+                  className="px-3 py-1.5 rounded-full text-xs font-mono bg-[#121528] text-slate-400 hover:text-white border border-[#252846] transition-colors"
+                >
+                  Showing: {selectedCategory} · Reset
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 3-Column Parallax Grid */}

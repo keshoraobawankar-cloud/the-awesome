@@ -32,6 +32,24 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
   const allDrops = (drops && drops.length > 0) ? drops : DROP_TITLES_12;
 
   const timelineItems = useMemo(() => {
+    if (selectedCategory === 'Coming Soon') {
+      return allDrops
+        .filter((d) => d.daysRemaining > 30)
+        .sort((a, b) => a.daysRemaining - b.daysRemaining)
+        .map((d, idx): TimelineDrop => ({
+          id: d.id,
+          day: `In ${d.daysRemaining} Days`,
+          dateStr: d.date,
+          title: d.name,
+          category: d.category,
+          status: d.status,
+          platform: d.platform,
+          timeSlot: `T-${d.daysRemaining}D`,
+          highlight: d.tagline || d.description,
+          side: idx % 2 === 0 ? 'left' : 'right'
+        }));
+    }
+
     const mapped = THIS_WEEK_TIMELINE.map((item) => {
       const liveMatch = allDrops.find(
         (d) =>
@@ -53,24 +71,28 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
     return filtered.length > 0 ? filtered : mapped;
   }, [allDrops, selectedCategory]);
 
+  cardRefs.current = [];
+
   useEffect(() => {
     const ctx = gsap.context(() => {
       // 1. Scroll-linked vertical drawing line
-      gsap.fromTo(
-        lineRef.current,
-        { height: '0%' },
-        {
-          height: '100%',
-          ease: 'none',
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 70%',
-            end: 'bottom 85%',
-            scrub: true,
-            invalidateOnRefresh: true
+      if (lineRef.current) {
+        gsap.fromTo(
+          lineRef.current,
+          { height: '0%' },
+          {
+            height: '100%',
+            ease: 'none',
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: 'top 70%',
+              end: 'bottom 85%',
+              scrub: true,
+              invalidateOnRefresh: true
+            }
           }
-        }
-      );
+        );
+      }
 
       // 2. Pop-in alternating cards
       cardRefs.current.forEach((card, idx) => {
@@ -87,11 +109,11 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
             opacity: 1,
             x: 0,
             scale: 1,
-            duration: 0.8,
+            duration: 0.6,
             ease: 'back.out(1.4)',
             scrollTrigger: {
               trigger: card,
-              start: 'top 85%',
+              start: 'top 90%',
               toggleActions: 'play none none reverse'
             }
           }
@@ -99,8 +121,9 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
       });
     }, sectionRef);
 
+    ScrollTrigger.refresh();
     return () => ctx.revert();
-  }, []);
+  }, [selectedCategory, timelineItems.length]);
 
   const getStatusBadge = (status: TimelineDrop['status']) => {
     switch (status) {
@@ -126,9 +149,11 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
   };
 
   const findMatchingDrop = (timelineItem: TimelineDrop): DropTitle => {
-    const found = allDrops.find(
-      (d) => d.name.toLowerCase().includes(timelineItem.title.toLowerCase().slice(0, 10))
-    );
+    const found =
+      allDrops.find((d) => d.id === timelineItem.id) ||
+      allDrops.find(
+        (d) => d.name.toLowerCase().includes(timelineItem.title.toLowerCase().slice(0, 10))
+      );
     return (
       found || {
         id: timelineItem.id,
@@ -163,19 +188,30 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
             <span>Scroll-Linked Radar Line</span>
           </div>
           <h2 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide">
-            THIS WEEK <span className="text-[#22d3ee]">TIMELINE</span>
+            {selectedCategory === 'Coming Soon' ? (
+              <>
+                COMING SOON <span className="text-[#22d3ee]">RADAR (&gt;30 DAYS)</span>
+              </>
+            ) : (
+              <>
+                THIS WEEK <span className="text-[#22d3ee]">TIMELINE</span>
+              </>
+            )}
           </h2>
           <p className="text-sm sm:text-base text-slate-400 max-w-xl mx-auto font-inter mt-3">
-            Watch the central trajectory line calibrate as you scroll down. Alternating daily drops, confirmed platforms, and early pre-loads.
+            {selectedCategory === 'Coming Soon'
+              ? `Showing ${timelineItems.length} tracked release${timelineItems.length === 1 ? '' : 's'} landing more than 30 days from today.`
+              : 'Watch the central trajectory line calibrate as you scroll down. Alternating daily drops, confirmed platforms, and early pre-loads.'}
           </p>
           {onSelectCategory && (
             <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
-              {['All', 'Movies', 'Games', 'Books'].map((cat) => {
+              {['All', 'Movies', 'Games', 'Books', 'Coming Soon'].map((cat) => {
                 const active = selectedCategory.toLowerCase() === cat.toLowerCase();
                 return (
                   <button
                     key={cat}
                     type="button"
+                    aria-pressed={active}
                     onClick={() => onSelectCategory(cat)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
                       active
@@ -183,7 +219,11 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                         : 'bg-[#121528] text-slate-400 hover:text-white border border-[#252846]'
                     }`}
                   >
-                    {cat === 'All' ? 'All Sectors' : cat}
+                    {cat === 'All'
+                      ? 'All Sectors'
+                      : cat === 'Coming Soon'
+                      ? 'Coming Soon (>30D)'
+                      : cat}
                   </button>
                 );
               })}
@@ -204,6 +244,22 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
 
           {/* Timeline Cards */}
           <div className="space-y-12 sm:space-y-16">
+            {timelineItems.length === 0 && (
+              <div className="p-8 rounded-2xl bg-[#121528] border border-[#252846] text-center max-w-lg mx-auto">
+                <p className="text-sm text-slate-300 font-inter mb-3">
+                  No releases currently scheduled more than 30 days away.
+                </p>
+                {onSelectCategory && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCategory('All')}
+                    className="px-4 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400/50 text-cyan-200 text-xs font-mono font-semibold hover:bg-cyan-500/30 transition-colors"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+            )}
             {timelineItems.map((drop, idx) => {
               const isLeft = idx % 2 === 0;
               const isReminded = isWatchlisted(drop.id);

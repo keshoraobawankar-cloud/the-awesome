@@ -34,6 +34,16 @@ import { useDropData } from '../../context/DropDataContext';
 
 gsap.registerPlugin(ScrollTrigger);
 
+export type CategoryFilter =
+  | 'All'
+  | 'Movies'
+  | 'Anime'
+  | 'Games'
+  | 'Dramas'
+  | 'Books'
+  | 'Manga'
+  | 'Coming Soon';
+
 export const DropRadarApp: React.FC = () => {
   const lenisRef = useRef<Lenis | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
@@ -41,7 +51,16 @@ export const DropRadarApp: React.FC = () => {
   const { isAudioDeskEnabled } = useBugle();
   const { drops, news } = useDropData();
 
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('All');
+
+  const handleSelectCategory = (cat: string) => {
+    setSelectedCategory((prev) => {
+      if (cat === 'Coming Soon') {
+        return prev === 'Coming Soon' ? 'All' : 'Coming Soon';
+      }
+      return cat as CategoryFilter;
+    });
+  };
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isWatchlistOpen, setIsWatchlistOpen] = useState(false);
   const [isLiveSyncOpen, setIsLiveSyncOpen] = useState(() => {
@@ -215,7 +234,7 @@ export const DropRadarApp: React.FC = () => {
           setIsUserUpdateModalOpen(true);
         }}
         selectedCategory={selectedCategory}
-        onSelectCategory={(cat) => setSelectedCategory(cat)}
+        onSelectCategory={handleSelectCategory}
         onScrollToSection={handleScrollToSection}
       />
 
@@ -239,7 +258,7 @@ export const DropRadarApp: React.FC = () => {
 
         {/* 4. Category Showcase Section (Horizontal Scroll Pin) */}
         <CategoryShowcaseSection
-          onSelectCategory={(cat) => setSelectedCategory(cat)}
+          onSelectCategory={handleSelectCategory}
           onScrollToTimeline={() => handleScrollToSection('timeline')}
           onOpenSectorSlate={(sector, initialMoviesFilter) =>
             setSectorModalState({ sector, initialMoviesFilter })
@@ -252,11 +271,15 @@ export const DropRadarApp: React.FC = () => {
         <TimelineSection
           onOpenModal={(drop) => openDropModal(drop, false)}
           selectedCategory={selectedCategory}
-          onSelectCategory={(cat) => setSelectedCategory(cat)}
+          onSelectCategory={handleSelectCategory}
         />
 
         {/* 6. Poster Parallax Gallery (3 Columns Asynchronous) */}
-        <PosterGallerySection onOpenModal={(drop) => openDropModal(drop, false)} />
+        <PosterGallerySection
+          onOpenModal={(drop) => openDropModal(drop, false)}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategory}
+        />
 
         {/* 6. Stats Section (Telemetry Count-Up) */}
         <StatsSection />
