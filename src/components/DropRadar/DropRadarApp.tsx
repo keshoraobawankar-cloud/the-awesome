@@ -176,6 +176,7 @@ export const DropRadarApp: React.FC = () => {
 
     const handleLoad = () => scheduleRefresh();
     window.addEventListener('load', handleLoad);
+    window.addEventListener('resize', scheduleRefresh);
     document.fonts?.ready?.then(scheduleRefresh);
 
     return () => {
@@ -183,6 +184,7 @@ export const DropRadarApp: React.FC = () => {
       if (rafId !== null) cancelAnimationFrame(rafId);
       if (observer) observer.disconnect();
       window.removeEventListener('load', handleLoad);
+      window.removeEventListener('resize', scheduleRefresh);
     };
   }, [drops.length, news.length]);
 
@@ -205,8 +207,11 @@ export const DropRadarApp: React.FC = () => {
       playWhooshSound();
     }
     const el = document.getElementById(sectionId);
+    const headerOffset = typeof window !== 'undefined' && window.innerWidth < 1280 ? -104 : -72;
     if (el && lenisRef.current) {
-      lenisRef.current.scrollTo(el, { offset: -60, duration: 1.4 });
+      lenisRef.current.scrollTo(el, { offset: headerOffset, duration: 1.2 });
+    } else if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -215,12 +220,14 @@ export const DropRadarApp: React.FC = () => {
       playWhooshSound();
     }
     if (lenisRef.current) {
-      lenisRef.current.scrollTo(0, { duration: 1.6 });
+      lenisRef.current.scrollTo(0, { duration: 1.4 });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-[#0b0d1a] text-slate-100 font-inter selection:bg-[#ff3d71] selection:text-white overflow-x-clip">
+    <div className="relative min-h-dvh bg-[#0b0d1a] text-slate-100 font-inter selection:bg-[#ff3d71] selection:text-white overflow-x-clip">
       {/* Custom Glowing Cursor */}
       <CustomCursor />
 

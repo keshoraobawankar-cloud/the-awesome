@@ -39,6 +39,35 @@
   .text-glow-red {
     text-shadow: 0 0 20px rgba(255, 61, 113, 0.7);
   }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+html, body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* Responsive sticky offset for NewsStackSection stacking scoops */
+.sticky-scoop-card {
+  top: calc(7.25rem + var(--stack-idx, 0) * 10px);
+}
+
+@media (min-width: 640px) {
+  .sticky-scoop-card {
+    top: calc(6.5rem + var(--stack-idx, 0) * 14px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .sticky-scoop-card {
+    top: calc(6rem + var(--stack-idx, 0) * 18px);
+  }
 }
 
 /* Lenis Smooth Scroll Recommended Rules */

@@ -16,22 +16,25 @@ export const ReminderCtaSection: React.FC = () => {
   const { showToast, isAudioDeskEnabled } = useBugle();
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      if (!bellRef.current) return;
       // Bell shake animation when section enters viewport
       gsap.to(bellRef.current, {
-        rotation: 18,
+        rotation: 16,
         yoyo: true,
         repeat: 7,
         duration: 0.12,
         ease: 'power1.inOut',
         scrollTrigger: {
           trigger: containerRef.current,
-          start: 'top 70%'
+          start: 'top 75%'
         }
       });
     }, containerRef);
 
-    return () => ctx.revert();
+    return () => mm.revert();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -59,30 +62,30 @@ export const ReminderCtaSection: React.FC = () => {
     <section
       id="reminders"
       ref={containerRef}
-      className="relative w-full py-28 sm:py-36 overflow-hidden bg-gradient-to-b from-[#0b0d1a] via-[#1a1333] to-[#0b0d1a]"
+      className="relative w-full py-16 sm:py-28 lg:py-36 overflow-x-clip bg-gradient-to-b from-[#0b0d1a] via-[#1a1333] to-[#0b0d1a]"
     >
       {/* Dynamic Animated Shifting Background Glows */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.25)_0%,transparent_60%)] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 bg-[radial-gradient(circle,rgba(34,211,238,0.2)_0%,transparent_60%)] pointer-events-none" />
-      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-80 h-80 bg-[radial-gradient(circle,rgba(255,61,113,0.2)_0%,transparent_60%)] pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 max-w-[70vw] h-80 bg-[radial-gradient(circle,rgba(34,211,238,0.2)_0%,transparent_60%)] pointer-events-none" />
+      <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-80 max-w-[70vw] h-80 bg-[radial-gradient(circle,rgba(255,61,113,0.2)_0%,transparent_60%)] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 relative z-10 text-center">
         {/* Shaking Bell Icon */}
         <div
           ref={bellRef}
-          className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] p-[2px] shadow-[0_0_40px_rgba(139,92,246,0.6)] mb-8 transform origin-top"
+          className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] p-[2px] shadow-[0_0_40px_rgba(139,92,246,0.6)] mb-6 sm:mb-8 transform origin-top"
         >
-          <div className="w-full h-full bg-[#0b0d1a] rounded-[22px] flex items-center justify-center">
-            <Bell className="w-10 h-10 text-cyan-300" />
+          <div className="w-full h-full bg-[#0b0d1a] rounded-[14px] sm:rounded-[22px] flex items-center justify-center">
+            <Bell className="w-8 h-8 sm:w-10 sm:h-10 text-cyan-300" />
           </div>
         </div>
 
         {/* Heading */}
-        <h2 className="font-bebas text-5xl sm:text-7xl md:text-8xl text-white tracking-tight leading-none mb-4">
+        <h2 className="font-bebas text-[clamp(2.5rem,8vw,5.5rem)] text-white tracking-tight leading-none mb-4 text-balance">
           NEVER MISS A <span className="text-glow-cyan text-cyan-400">MIDNIGHT DROP</span>
         </h2>
 
-        <p className="text-slate-300 text-base sm:text-xl font-inter max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-slate-300 text-sm sm:text-lg md:text-xl font-inter max-w-2xl mx-auto mb-8 sm:mb-10 leading-relaxed">
           Lock in instant alerts 24 hours before tickets open, pre-loads unlock, or surprise dates slip. Zero noise, only verified drops.
         </p>
 

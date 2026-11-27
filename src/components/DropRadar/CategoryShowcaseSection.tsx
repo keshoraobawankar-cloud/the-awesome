@@ -78,49 +78,71 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
   }, [allDrops]);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      const track = trackRef.current;
-      const container = containerRef.current;
-      if (!track || !container) return;
+    const mm = gsap.matchMedia();
 
-      const getScrollWidth = () => Math.max(0, track.scrollWidth - window.innerWidth + 80);
+    mm.add(
+      {
+        isDesktop: '(min-width: 1024px)',
+        reduceMotion: '(prefers-reduced-motion: reduce)'
+      },
+      (context) => {
+        const { isDesktop, reduceMotion } = context.conditions || {};
+        const track = trackRef.current;
+        const container = containerRef.current;
+        if (!track || !container) return;
 
-      gsap.to(track, {
-        x: () => -getScrollWidth(),
-        ease: 'none',
-        scrollTrigger: {
-          trigger: container,
-          start: 'top top',
-          end: () => `+=${getScrollWidth()}`,
-          pin: true,
-          scrub: 1,
-          invalidateOnRefresh: true,
-          anticipatePin: 1,
-          onUpdate: (self) => {
-            const idx = Math.min(
-              CATEGORY_PANELS.length - 1,
-              Math.max(0, Math.round(self.progress * (CATEGORY_PANELS.length - 1)))
-            );
-            setActiveSlideIndex(idx);
-          }
+        // Only pin & run horizontal scroll on desktop viewports when motion is enabled
+        if (isDesktop && !reduceMotion) {
+          const getScrollWidth = () => Math.max(0, track.scrollWidth - window.innerWidth + 80);
+
+          gsap.to(track, {
+            x: () => -getScrollWidth(),
+            ease: 'none',
+            scrollTrigger: {
+              trigger: container,
+              start: 'top top',
+              end: () => `+=${getScrollWidth()}`,
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true,
+              anticipatePin: 1,
+              onUpdate: (self) => {
+                const idx = Math.min(
+                  CATEGORY_PANELS.length - 1,
+                  Math.max(0, Math.round(self.progress * (CATEGORY_PANELS.length - 1)))
+                );
+                setActiveSlideIndex(idx);
+              }
+            }
+          });
+        } else {
+          gsap.set(track, { clearProps: 'transform' });
         }
-      });
-    }, containerRef);
+      },
+      containerRef
+    );
 
-    return () => ctx.revert();
+    return () => mm.revert();
   }, []);
 
   const jumpToSlide = (idx: number) => {
     const clamped = Math.max(0, Math.min(livePanels.length - 1, idx));
     setActiveSlideIndex(clamped);
-    const track = trackRef.current;
     const container = containerRef.current;
-    if (!track || !container) return;
+    if (!container) return;
+
     const st = ScrollTrigger.getAll().find((t) => t.trigger === container);
     if (st) {
       const progress = clamped / Math.max(1, livePanels.length - 1);
       const targetScroll = st.start + progress * (st.end - st.start);
       window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+      return;
+    }
+
+    // Mobile/tablet fallback: smoothly scroll to the specific card in the grid
+    const cardEl = document.getElementById(`sector-card-${livePanels[clamped]?.id}`);
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   };
 
@@ -128,22 +150,22 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
     <section
       id="category-showcase"
       ref={containerRef}
-      className="relative w-full h-screen overflow-hidden bg-[#0b0d1a] flex flex-col justify-center"
+      className="relative w-full py-16 sm:py-20 lg:py-0 lg:min-h-dvh lg:h-dvh overflow-x-clip lg:overflow-hidden bg-[#0b0d1a] flex flex-col justify-center"
     >
       {/* Header bar with interactive sector jump & slide controls */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full pt-8 pb-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full lg:pt-8 pb-6 lg:pb-4 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+        <div className="min-w-0">
           <p className="text-cyan-400 text-xs font-mono uppercase tracking-widest font-semibold mb-1">
             Interactive Release Sectors
           </p>
-          <h2 className="font-bebas text-4xl sm:text-6xl text-white tracking-wide leading-none">
+          <h2 className="font-bebas text-[clamp(2.25rem,5.5vw,3.75rem)] text-white tracking-wide leading-none text-balance">
             CATEGORY <span className="text-[#8b5cf6]">SHOWCASE</span>
           </h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Sector Switcher */}
-          <div className="hidden md:flex items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846]">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-stretch sm:items-center gap-2.5 min-w-0">
+          {/* Quick Sector Switcher (Horizontally scrollable on mobile/tablet) */}
+          <div className="flex flex-nowrap items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846] overflow-x-auto no-scrollbar max-w-full">
             {livePanels.map((p, idx) => (
               <button
                 key={p.id}
@@ -160,25 +182,27 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
             ))}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => jumpToSlide(activeSlideIndex - 1)}
-              disabled={activeSlideIndex === 0}
-              className="p-2 rounded-xl bg-[#121528] border border-[#252846] text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 transition-colors"
-              aria-label="Previous category slide"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => jumpToSlide(activeSlideIndex + 1)}
-              disabled={activeSlideIndex === livePanels.length - 1}
-              className="p-2 rounded-xl bg-[#121528] border border-[#252846] text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 transition-colors"
-              aria-label="Next category slide"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+          <div className="flex items-center justify-between sm:justify-start gap-1.5 shrink-0">
+            <div className="hidden lg:flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => jumpToSlide(activeSlideIndex - 1)}
+                disabled={activeSlideIndex === 0}
+                className="p-2 rounded-xl bg-[#121528] border border-[#252846] text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 transition-colors"
+                aria-label="Previous category slide"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => jumpToSlide(activeSlideIndex + 1)}
+                disabled={activeSlideIndex === livePanels.length - 1}
+                className="p-2 rounded-xl bg-[#121528] border border-[#252846] text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 transition-colors"
+                aria-label="Next category slide"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => {
@@ -188,20 +212,20 @@ export const CategoryShowcaseSection: React.FC<CategoryShowcaseSectionProps> = (
                   onOpenSectorSlate(current.sector);
                 }
               }}
-              className="px-3.5 py-2 rounded-xl bg-[#ff3d71] hover:bg-[#ff5685] text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
+              className="w-full sm:w-auto justify-center px-3.5 py-2 rounded-xl bg-[#ff3d71] hover:bg-[#ff5685] text-white text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
             >
               <span>Open Active Slate</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 shrink-0" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Horizontal Moving Track */}
-      <div className="w-full overflow-hidden flex-1 flex items-center">
+      {/* Responsive Mobile/Tablet CSS Grid -> Desktop Horizontal Moving Track */}
+      <div className="w-full lg:overflow-hidden lg:flex-1 lg:flex lg:items-center">
         <div
           ref={trackRef}
-          className="flex gap-6 sm:gap-8 px-6 sm:px-12 w-max will-change-transform"
+          className="max-w-7xl mx-auto lg:max-w-none lg:mx-0 px-4 sm:px-6 lg:px-12 grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-nowrap gap-5 sm:gap-6 lg:gap-8 w-full lg:w-max will-change-transform"
         >
           {livePanels.map((panel, idx) => (
             <CategoryCard
@@ -251,7 +275,13 @@ const CategoryCard: React.FC<{
   const isMovies = categoryName === 'Movies';
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+    if (
+      !cardRef.current ||
+      typeof window === 'undefined' ||
+      !window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches
+    ) {
+      return;
+    }
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -287,15 +317,20 @@ const CategoryCard: React.FC<{
 
   return (
     <div
+      id={`sector-card-${panel.id}`}
       ref={cardRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => onOpenSlate('all')}
-      style={{
-        transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`,
-        transition: 'transform 0.15s ease-out'
-      }}
-      className="w-[330px] sm:w-[430px] h-[490px] sm:h-[520px] rounded-3xl p-6 relative flex flex-col justify-between overflow-hidden cursor-pointer group bg-[#121528] border border-[#252846] hover:border-slate-300/40 shadow-2xl transition-shadow select-none"
+      style={
+        tilt.rotateX !== 0 || tilt.rotateY !== 0
+          ? {
+              transform: `perspective(1000px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg)`,
+              transition: 'transform 0.15s ease-out'
+            }
+          : undefined
+      }
+      className="w-full lg:w-[430px] min-h-[390px] lg:h-[520px] rounded-3xl p-5 sm:p-6 relative flex flex-col justify-between overflow-hidden cursor-pointer group bg-[#121528] border border-[#252846] hover:border-slate-300/40 shadow-2xl transition-shadow select-none"
     >
       {/* Background Gradient */}
       <div

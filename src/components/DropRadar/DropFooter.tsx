@@ -8,11 +8,11 @@ interface DropFooterProps {
 
 export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollToSection }) => {
   return (
-    <footer className="relative w-full bg-[#070812] border-t border-[#252846] py-16 sm:py-20 text-slate-400 font-inter overflow-hidden">
+    <footer className="relative w-full bg-[#070812] border-t border-[#252846] py-14 sm:py-20 text-slate-400 font-inter overflow-x-clip">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 sm:gap-12 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12 mb-12">
           {/* Brand Info */}
-          <div className="md:col-span-1">
+          <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#ff3d71] via-[#8b5cf6] to-[#22d3ee] flex items-center justify-center p-[1px]">
                 <div className="w-full h-full bg-[#0b0d1a] rounded-[7px] flex items-center justify-center">
@@ -141,7 +141,7 @@ export const DropFooter: React.FC<DropFooterProps> = ({ onScrollToTop, onScrollT
               This product uses the TMDB API but is not endorsed or certified by TMDB. Anime & manga metadata powered by AniList GraphQL.
             </p>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-slate-400">
             <span>Powered by GSAP + Lenis + Motion</span>
             <span>•</span>
             <span className="text-cyan-400">Live Release Countdowns</span>

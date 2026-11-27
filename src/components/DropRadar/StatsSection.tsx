@@ -35,10 +35,11 @@ export const StatsSection: React.FC = () => {
   }, [metrics]);
 
   useEffect(() => {
+    const timers: number[] = [];
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: sectionRef.current,
-        start: 'top 80%',
+        start: 'top 82%',
         onEnter: () => {
           if (hasAnimated.current) return;
           hasAnimated.current = true;
@@ -46,13 +47,13 @@ export const StatsSection: React.FC = () => {
           // Animate count values
           metrics.forEach((metric, idx) => {
             const target = metric.value;
-            const duration = 1800;
-            const steps = 60;
+            const duration = 1600;
+            const steps = 50;
             const stepTime = duration / steps;
             let current = 0;
             const increment = target / steps;
 
-            const timer = setInterval(() => {
+            const timer = window.setInterval(() => {
               current += increment;
               if (current >= target) {
                 setCounts((prev) => {
@@ -60,7 +61,7 @@ export const StatsSection: React.FC = () => {
                   updated[idx] = target;
                   return updated;
                 });
-                clearInterval(timer);
+                window.clearInterval(timer);
               } else {
                 setCounts((prev) => {
                   const updated = [...prev];
@@ -69,30 +70,34 @@ export const StatsSection: React.FC = () => {
                 });
               }
             }, stepTime);
+            timers.push(timer);
           });
         }
       });
     }, sectionRef);
 
-    return () => ctx.revert();
+    return () => {
+      timers.forEach((t) => window.clearInterval(t));
+      ctx.revert();
+    };
   }, [metrics]);
 
   return (
     <section
       id="stats"
       ref={sectionRef}
-      className="relative w-full py-24 sm:py-32 bg-[#0b0d1a] border-y border-[#252846]/60 overflow-hidden"
+      className="relative w-full py-16 sm:py-24 lg:py-32 bg-[#0b0d1a] border-y border-[#252846]/60 overflow-x-clip"
     >
       {/* Center Radar Sweep Line Animation */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.1),transparent_70%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <div className="text-center mb-16">
+        <div className="text-center mb-12 sm:mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171a30] border border-[#252846] text-[#22d3ee] text-xs font-mono font-semibold uppercase tracking-widest mb-3">
-            <Radio className="w-3.5 h-3.5 animate-pulse" />
+            <Radio className="w-3.5 h-3.5 animate-pulse shrink-0" />
             <span>Telemetry & Platform Integrity</span>
           </div>
-          <h2 className="font-bebas text-4xl sm:text-6xl text-white tracking-wide">
+          <h2 className="font-bebas text-[clamp(2.25rem,5.5vw,3.75rem)] leading-none text-white tracking-wide text-balance">
             AUDITED BY THE <span className="text-[#8b5cf6]">RADAR ENGINE</span>
           </h2>
           <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto font-inter mt-3">
@@ -101,7 +106,7 @@ export const StatsSection: React.FC = () => {
         </div>
 
         {/* 4 Stats Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {metrics.map((metric, idx) => {
             const Icon = icons[idx];
             const accent = accents[idx];
@@ -110,7 +115,7 @@ export const StatsSection: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="p-8 rounded-3xl bg-[#121528]/90 border border-[#252846] backdrop-blur-md relative overflow-hidden group hover:border-[#8b5cf6]/50 transition-all hover:scale-[1.02] shadow-xl"
+                className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-[#121528]/90 border border-[#252846] backdrop-blur-md relative overflow-hidden group hover:border-[#8b5cf6]/50 transition-all hover:scale-[1.02] shadow-xl"
               >
                 {/* Glow Backdrop */}
                 <div
@@ -118,7 +123,7 @@ export const StatsSection: React.FC = () => {
                   style={{ backgroundColor: accent }}
                 />
 
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-5 sm:mb-6">
                   <div
                     className="p-3 rounded-2xl bg-[#171a30] border border-[#2b3052]"
                     style={{ color: accent }}
@@ -129,11 +134,11 @@ export const StatsSection: React.FC = () => {
                 </div>
 
                 <div
-                  className="font-bebas text-5xl sm:text-6xl text-white font-variant-numeric tabular-nums tracking-tight mb-2 flex items-baseline"
+                  className="font-bebas text-[clamp(2.75rem,5vw,3.75rem)] leading-none text-white tabular-nums tracking-tight mb-2 flex items-baseline"
                   style={{ textShadow: `0 0 20px ${accent}44` }}
                 >
                   <span>{displayVal}</span>
-                  <span className="text-3xl sm:text-4xl ml-0.5" style={{ color: accent }}>
+                  <span className="text-2xl sm:text-4xl ml-0.5" style={{ color: accent }}>
                     {metric.suffix}
                   </span>
                 </div>

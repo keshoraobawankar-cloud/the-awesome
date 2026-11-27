@@ -144,75 +144,92 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
   const headlineWords = ['THE', 'NEXT', 'WAVE', 'OF', 'CULTURE', 'DROPS', 'HERE.'];
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        wordsRef.current,
-        { opacity: 0, y: 30, filter: 'blur(8px)' },
-        {
-          opacity: 1,
-          y: 0,
-          filter: 'blur(0px)',
-          stagger: 0.12,
-          duration: 0.9,
-          ease: 'power3.out'
+    const mm = gsap.matchMedia();
+
+    mm.add(
+      {
+        isDesktop: '(min-width: 768px)',
+        isMobile: '(max-width: 767px)',
+        reduceMotion: '(prefers-reduced-motion: reduce)'
+      },
+      (context) => {
+        const { isDesktop, reduceMotion } = context.conditions || {};
+
+        if (!reduceMotion && wordsRef.current.length > 0) {
+          gsap.fromTo(
+            wordsRef.current,
+            { opacity: 0, y: isDesktop ? 30 : 16, filter: isDesktop ? 'blur(8px)' : 'none' },
+            {
+              opacity: 1,
+              y: 0,
+              filter: 'blur(0px)',
+              stagger: isDesktop ? 0.1 : 0.06,
+              duration: isDesktop ? 0.85 : 0.55,
+              ease: 'power3.out'
+            }
+          );
         }
-      );
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=100%',
-          pin: true,
-          scrub: 1,
-          invalidateOnRefresh: true,
-          anticipatePin: 1
+        // Only pin & zoom on md+ viewports when reduced motion is not requested
+        if (isDesktop && !reduceMotion && containerRef.current) {
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: 'top top',
+              end: '+=100%',
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true,
+              anticipatePin: 1
+            }
+          });
+
+          tl.to(
+            headlineRef.current,
+            {
+              scale: 2.0,
+              opacity: 0,
+              filter: 'blur(12px)',
+              ease: 'power2.inOut'
+            },
+            0
+          )
+            .to(
+              posterWallRef.current,
+              {
+                opacity: 0.65,
+                scale: 1.05,
+                ease: 'power1.out'
+              },
+              0
+            )
+            .to(
+              scrollIndicatorRef.current,
+              {
+                opacity: 0,
+                y: 20,
+                ease: 'power1.out'
+              },
+              0
+            );
         }
-      });
+      },
+      containerRef
+    );
 
-      tl.to(
-        headlineRef.current,
-        {
-          scale: 2.2,
-          opacity: 0,
-          filter: 'blur(12px)',
-          ease: 'power2.inOut'
-        },
-        0
-      )
-        .to(
-          posterWallRef.current,
-          {
-            opacity: 0.65,
-            scale: 1.05,
-            ease: 'power1.out'
-          },
-          0
-        )
-        .to(
-          scrollIndicatorRef.current,
-          {
-            opacity: 0,
-            y: 20,
-            ease: 'power1.out'
-          },
-          0
-        );
-    }, containerRef);
-
-    return () => ctx.revert();
+    return () => mm.revert();
   }, []);
 
   return (
     <section
       id="intro"
       ref={containerRef}
-      className="relative w-full h-screen overflow-hidden bg-[#0b0d1a] flex items-center justify-center select-none"
+      className="relative w-full min-h-dvh md:h-dvh overflow-x-clip overflow-y-hidden bg-[#0b0d1a] flex flex-col items-center justify-center py-12 sm:py-16 md:py-0 select-none"
     >
       {/* Background Poster Wall (Prioritizes top trending drops across all categories) */}
       <div
         ref={posterWallRef}
-        className="absolute inset-0 opacity-15 pointer-events-none transform scale-90 transition-all duration-300 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 p-4 overflow-hidden"
+        className="absolute inset-0 opacity-15 pointer-events-none transform scale-95 md:scale-90 transition-all duration-300 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2.5 sm:gap-3 p-3 sm:p-4 overflow-hidden"
       >
         {posterDrops.map((drop) => (
           <div
@@ -251,27 +268,27 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
       />
 
       {/* Center Headline */}
-      <div className="relative z-10 text-center px-4 max-w-5xl mx-auto flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#171a30]/90 border border-cyan-500/40 text-cyan-300 text-xs sm:text-sm font-inter font-semibold uppercase tracking-widest mb-5 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
+      <div className="relative z-10 text-center px-4 sm:px-6 w-full max-w-5xl mx-auto flex flex-col items-center">
+        <div className="inline-flex items-center gap-2 max-w-full px-3 sm:px-3.5 py-1 rounded-full bg-[#171a30]/90 border border-cyan-500/40 text-cyan-300 text-[11px] sm:text-sm font-inter font-semibold uppercase tracking-wider sm:tracking-widest mb-4 sm:mb-5 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
           {spotlightDrop ? (
             <>
-              {renderCategoryIcon(spotlightDrop.category)}
-              <span>
+              <span className="shrink-0">{renderCategoryIcon(spotlightDrop.category)}</span>
+              <span className="truncate">
                 TRENDING #1 · {spotlightDrop.category.toUpperCase()} · T-{spotlightDrop.daysRemaining}D ·{' '}
                 {spotlightDrop.name.toUpperCase()}
               </span>
             </>
           ) : (
             <>
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>AHEADOFYOU LIVE RELEASE RADAR</span>
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+              <span className="truncate">AHEADOFYOU LIVE RELEASE RADAR</span>
             </>
           )}
         </div>
 
         <h1
           ref={headlineRef}
-          className="font-bebas text-5xl sm:text-7xl md:text-8xl lg:text-9xl tracking-tight leading-[0.92] text-white flex flex-wrap justify-center gap-x-3 sm:gap-x-5 gap-y-1 transform origin-center will-change-transform"
+          className="font-bebas text-[clamp(2.75rem,11vw,7.75rem)] tracking-tight leading-[0.94] text-white flex flex-wrap justify-center gap-x-2.5 sm:gap-x-5 gap-y-0.5 sm:gap-y-1 transform origin-center will-change-transform max-w-full text-balance"
         >
           {headlineWords.map((word, i) => (
             <span
@@ -292,7 +309,7 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
           ))}
         </h1>
 
-        <p className="mt-5 text-sm sm:text-lg text-slate-300 max-w-2xl font-inter font-light tracking-wide leading-relaxed">
+        <p className="mt-4 sm:mt-5 text-sm sm:text-base md:text-lg text-slate-300 max-w-2xl font-inter font-light tracking-wide leading-relaxed">
           {spotlightDrop
             ? `Trending #1 across the radar: ${spotlightDrop.name} (${spotlightDrop.category}) launches ${spotlightDrop.date} on ${spotlightDrop.platform}.`
             : 'Movies, Anime, Games, Dramas, Books and Manga. Real-time countdowns, audited drop calendars, and breaking scoops.'}
@@ -300,8 +317,8 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
 
         {/* Live #1 Trending Release Spotlight Bar with Remaining Time Clock */}
         {spotlightDrop && (
-          <div className="mt-6 w-full max-w-3xl rounded-2xl bg-[#121528]/90 border border-[#2b3052] hover:border-cyan-400/60 backdrop-blur-md p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_0_30px_rgba(11,13,26,0.8)] transition-colors">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="mt-5 sm:mt-6 w-full max-w-3xl min-w-0 rounded-2xl bg-[#121528]/90 border border-[#2b3052] hover:border-cyan-400/60 backdrop-blur-md p-3.5 sm:p-4 flex flex-col gap-3 shadow-[0_0_30px_rgba(11,13,26,0.8)] transition-colors">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3 text-left min-w-0">
                 <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-[#2b3052] bg-[#171a30]">
                   <img
@@ -310,14 +327,14 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-mono uppercase tracking-wider">
                     <span className="text-[#ff3d71] font-bold">
                       TRENDING NOW · {spotlightDrop.category.toUpperCase()}
                     </span>
                     <span className="text-slate-500">•</span>
                     <span className="text-cyan-300 font-semibold flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3 shrink-0" />
                       {spotlightDrop.date}
                     </span>
                   </div>
@@ -330,20 +347,20 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={onScrollNext}
-                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white text-xs font-inter font-bold flex items-center gap-1.5 hover:opacity-95 transition-opacity shadow-lg"
+                  className="flex-1 sm:flex-initial justify-center px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#ff3d71] to-[#8b5cf6] text-white text-xs font-inter font-bold flex items-center gap-1.5 whitespace-nowrap hover:opacity-95 transition-opacity shadow-lg"
                 >
                   <span>Full Clock</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                 </button>
                 {onOpenModal && (
                   <button
                     type="button"
                     onClick={() => onOpenModal(spotlightDrop)}
-                    className="px-3 py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-xs font-inter font-semibold text-cyan-300 transition-colors"
+                    className="px-3 py-2 rounded-xl bg-[#171a30] hover:bg-[#202444] border border-[#2b3052] text-xs font-inter font-semibold text-cyan-300 whitespace-nowrap transition-colors"
                   >
                     Intel
                   </button>
@@ -354,15 +371,15 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
             {/* Live Remaining Time to Release Readout */}
             <div
               ref={clockRowRef}
-              className="pt-2.5 border-t border-[#252846] rounded-xl px-2 pb-1 flex flex-wrap items-center justify-between gap-2"
+              className="pt-2.5 border-t border-[#252846] rounded-xl px-1 sm:px-2 pb-1 flex flex-wrap items-center justify-between gap-2"
             >
-              <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-300 flex items-center gap-1.5">
+              <span className="text-[10px] font-mono uppercase tracking-wider sm:tracking-widest text-cyan-300 flex items-center gap-1.5">
                 <Clock
-                  className={`w-3.5 h-3.5 animate-pulse ${
+                  className={`w-3.5 h-3.5 animate-pulse shrink-0 ${
                     isImminentSpotlight ? 'text-[#ff3d71]' : 'text-cyan-400'
                   }`}
                 />
-                Remaining Time to Release
+                <span>Remaining Time</span>
               </span>
               {spotlightRemaining.isReleased ? (
                 <span className="text-xs font-mono font-bold text-emerald-300">
@@ -404,7 +421,7 @@ export const IntroSection: React.FC<IntroSectionProps> = ({ onScrollNext, onOpen
       <div
         ref={scrollIndicatorRef}
         onClick={onScrollNext}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors group"
+        className="mt-8 md:mt-0 md:absolute md:bottom-6 md:left-1/2 md:-translate-x-1/2 z-20 flex flex-col items-center gap-1.5 cursor-pointer text-slate-400 hover:text-cyan-400 transition-colors group"
       >
         <span className="text-[11px] font-mono uppercase tracking-[0.25em] font-semibold">Scroll</span>
         <div className="w-6 h-10 rounded-full border-2 border-slate-500 group-hover:border-cyan-400 flex items-start justify-center p-1 transition-colors">

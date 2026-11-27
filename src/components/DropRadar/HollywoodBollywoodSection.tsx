@@ -267,11 +267,11 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-1.5">
             <button
               type="button"
               onClick={(e) => handleWatchlistToggle(e, movie)}
-              className={`flex-1 py-2 px-2.5 rounded-xl border text-xs font-inter font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              className={`flex-1 min-w-[105px] py-2 px-2.5 rounded-xl border text-xs font-inter font-semibold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
                 isSaved
                   ? 'bg-emerald-600 text-white border-emerald-500'
                   : 'bg-[#171a30] text-slate-200 border-[#2b3052] hover:border-cyan-400 hover:text-white'
@@ -326,7 +326,7 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
   return (
     <section
       id="cinema-hub"
-      className="relative w-full py-24 sm:py-32 bg-[#0b0d1a] border-y border-[#252846]/60 overflow-hidden"
+      className="relative w-full py-16 sm:py-24 lg:py-32 bg-[#0b0d1a] border-y border-[#252846]/60 overflow-x-clip"
     >
       {/* Subtle Dual-Tone Cinema Glow */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[radial-gradient(circle,rgba(34,211,238,0.1)_0%,transparent_70%)] pointer-events-none" />
@@ -334,13 +334,13 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10 sm:mb-12">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171a30] border border-[#252846] text-cyan-300 text-xs font-mono font-semibold uppercase tracking-widest mb-3">
-              <Clapperboard className="w-3.5 h-3.5 text-[#ff3d71]" />
+              <Clapperboard className="w-3.5 h-3.5 text-[#ff3d71] shrink-0" />
               <span>Verified Theatrical & OTT Slate</span>
             </div>
-            <h2 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide leading-none">
+            <h2 className="font-bebas text-[clamp(2.25rem,6vw,4.5rem)] text-white tracking-wide leading-none text-balance">
               <span className="text-[#22d3ee]">HOLLYWOOD</span> &{' '}
               <span className="text-[#f59e0b]">BOLLYWOOD</span> MOVIES
             </h2>
@@ -350,8 +350,8 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
           </div>
 
           {/* Interactive Controls: Industry Tabs & Search */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846] overflow-x-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 min-w-0">
+            <div className="flex flex-nowrap items-center gap-1 p-1 rounded-xl bg-[#121528] border border-[#252846] overflow-x-auto no-scrollbar max-w-full">
               {(
                 [
                   { id: 'All', label: 'All Cinema', count: hollywoodMovies.length + bollywoodMovies.length },
@@ -426,7 +426,7 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
                 No upcoming IMAX or 70mm releases matched &ldquo;{filterText}&rdquo;.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {imaxTitles.map(renderMovieCard)}
               </div>
             )}
@@ -473,7 +473,7 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
                 No upcoming Hollywood films matched "{filterText}".
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {hollywoodMovies.map(renderMovieCard)}
               </div>
             )}
@@ -520,7 +520,7 @@ export const HollywoodBollywoodSection: React.FC<HollywoodBollywoodSectionProps>
                 No upcoming Bollywood films matched "{filterText}".
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {bollywoodMovies.map(renderMovieCard)}
               </div>
             )}

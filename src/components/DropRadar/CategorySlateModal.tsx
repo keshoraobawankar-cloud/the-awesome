@@ -214,11 +214,11 @@ export const CategorySlateModal: React.FC<CategorySlateModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-6xl max-h-[92vh] rounded-3xl bg-[#121528] border border-[#2b3052] shadow-2xl overflow-hidden flex flex-col text-slate-100 font-inter"
+        className="relative w-full max-w-6xl max-h-[92dvh] rounded-2xl sm:rounded-3xl bg-[#121528] border border-[#2b3052] shadow-2xl overflow-hidden flex flex-col text-slate-100 font-inter"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="px-5 sm:px-7 py-4 sm:py-5 border-b border-[#252846] bg-[#0b0d1a]/95 flex flex-col gap-4">
+        <div className="px-4 sm:px-7 py-4 sm:py-5 border-b border-[#252846] bg-[#0b0d1a]/95 flex flex-col gap-3 sm:gap-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3.5 min-w-0">
               <div className="w-11 h-11 rounded-2xl bg-[#171a30] border border-[#2b3052] flex items-center justify-center shrink-0">
@@ -282,7 +282,7 @@ export const CategorySlateModal: React.FC<CategorySlateModalProps> = ({
 
           {/* Sector Switcher Strip */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+            <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 lg:pb-0">
               {(['Movies', 'Anime', 'Games', 'Dramas', 'Books', 'Manga'] as SectorCategory[]).map((sec) => {
                 const isActive = activeSector === sec;
                 const count = pool.filter((d) => d.category === sec).length;
@@ -319,7 +319,7 @@ export const CategorySlateModal: React.FC<CategorySlateModalProps> = ({
 
           {/* Sub-Filters (Movies & IMAX vs Other Sectors) */}
           {activeSector === 'Movies' ? (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 pt-1 overflow-x-auto no-scrollbar">
               {(
                 [
                   { id: 'all', label: `All Movies (${movieStats.totalMovies})` },
@@ -344,7 +344,7 @@ export const CategorySlateModal: React.FC<CategorySlateModalProps> = ({
               ))}
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 pt-1 overflow-x-auto no-scrollbar">
               {(
                 [
                   { id: 'all', label: 'All Releases' },
@@ -391,7 +391,7 @@ export const CategorySlateModal: React.FC<CategorySlateModalProps> = ({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {sectorDrops.map((drop) => {
                 const isImax = isImaxRelease(drop);
                 const isBroken = drop.trailerStatus === 'flagged_broken';

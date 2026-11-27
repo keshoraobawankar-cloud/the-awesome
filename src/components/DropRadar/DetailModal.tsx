@@ -195,11 +195,11 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 bg-[#0b0d1a]/85 backdrop-blur-2xl animate-in fade-in duration-200"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-2.5 sm:p-6 bg-[#0b0d1a]/85 backdrop-blur-2xl animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-3xl rounded-3xl bg-[#121528] border-2 border-[#2b3052] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        className="relative w-full max-w-3xl rounded-2xl sm:rounded-3xl bg-[#121528] border-2 border-[#2b3052] shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -405,7 +405,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
         )}
 
         {/* Modal Body */}
-        <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-1">
+        <div className="p-4 sm:p-8 overflow-y-auto space-y-5 sm:space-y-6 flex-1">
           {/* Top metadata tags */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -593,18 +593,18 @@ export const DetailModal: React.FC<DetailModalProps> = ({
               <span className="text-[#8b5cf6]">TICKING LIVE</span>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 text-center">
+            <div className="grid grid-cols-4 gap-1.5 sm:gap-2 text-center">
               {[
                 { l: 'DAYS', v: countdown.days },
                 { l: 'HOURS', v: countdown.hours },
                 { l: 'MINS', v: countdown.minutes },
                 { l: 'SECS', v: countdown.seconds }
               ].map((c, i) => (
-                <div key={i} className="p-2 rounded-xl bg-[#171a30] border border-[#2b3052]">
-                  <div className="font-bebas text-2xl sm:text-3xl text-white font-variant-numeric tabular-nums">
+                <div key={i} className="p-1.5 sm:p-2 rounded-xl bg-[#171a30] border border-[#2b3052] min-w-0">
+                  <div className="font-bebas text-[clamp(1.4rem,5vw,2rem)] leading-tight text-white tabular-nums">
                     {String(c.v).padStart(2, '0')}
                   </div>
-                  <div className="text-[10px] font-mono text-slate-400">{c.l}</div>
+                  <div className="text-[9px] sm:text-[10px] font-mono text-slate-400">{c.l}</div>
                 </div>
               ))}
             </div>
@@ -711,7 +711,7 @@ export const DetailModal: React.FC<DetailModalProps> = ({
 
           {/* Action Footer */}
           <div className="pt-4 border-t border-[#252846] flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={handleToggleReminder}
                 className={`px-5 py-3 rounded-xl font-inter font-bold text-sm flex items-center gap-2 shadow-lg transition-all ${

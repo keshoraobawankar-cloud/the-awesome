@@ -74,55 +74,70 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
   cardRefs.current = [];
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      // 1. Scroll-linked vertical drawing line
-      if (lineRef.current) {
-        gsap.fromTo(
-          lineRef.current,
-          { height: '0%' },
-          {
-            height: '100%',
-            ease: 'none',
-            scrollTrigger: {
-              trigger: sectionRef.current,
-              start: 'top 70%',
-              end: 'bottom 85%',
-              scrub: true,
-              invalidateOnRefresh: true
-            }
-          }
-        );
-      }
+    const mm = gsap.matchMedia();
 
-      // 2. Pop-in alternating cards
-      cardRefs.current.forEach((card, idx) => {
-        if (!card) return;
-        const isLeft = idx % 2 === 0;
-        gsap.fromTo(
-          card,
-          {
-            opacity: 0,
-            x: isLeft ? -50 : 50,
-            scale: 0.92
-          },
-          {
-            opacity: 1,
-            x: 0,
-            scale: 1,
-            duration: 0.6,
-            ease: 'back.out(1.4)',
-            scrollTrigger: {
-              trigger: card,
-              start: 'top 90%',
-              toggleActions: 'play none none reverse'
+    mm.add(
+      {
+        isDesktop: '(min-width: 768px)',
+        isMobile: '(max-width: 767px)',
+        reduceMotion: '(prefers-reduced-motion: reduce)'
+      },
+      (context) => {
+        const { isDesktop, reduceMotion } = context.conditions || {};
+        if (reduceMotion) return;
+
+        // 1. Scroll-linked vertical drawing line
+        if (lineRef.current) {
+          gsap.fromTo(
+            lineRef.current,
+            { height: '0%' },
+            {
+              height: '100%',
+              ease: 'none',
+              scrollTrigger: {
+                trigger: sectionRef.current,
+                start: 'top 70%',
+                end: 'bottom 85%',
+                scrub: true,
+                invalidateOnRefresh: true
+              }
             }
-          }
-        );
-      });
-    }, sectionRef);
+          );
+        }
+
+        // 2. Pop-in cards (alternating X on md+, vertical-only Y on mobile to avoid horizontal overflow)
+        cardRefs.current.forEach((card, idx) => {
+          if (!card) return;
+          const isLeft = idx % 2 === 0;
+          gsap.fromTo(
+            card,
+            {
+              opacity: 0,
+              x: isDesktop ? (isLeft ? -40 : 40) : 0,
+              y: isDesktop ? 0 : 24,
+              scale: isDesktop ? 0.94 : 0.98
+            },
+            {
+              opacity: 1,
+              x: 0,
+              y: 0,
+              scale: 1,
+              duration: isDesktop ? 0.55 : 0.45,
+              ease: isDesktop ? 'back.out(1.3)' : 'power2.out',
+              scrollTrigger: {
+                trigger: card,
+                start: 'top 90%',
+                toggleActions: 'play none none reverse'
+              }
+            }
+          );
+        });
+      },
+      sectionRef
+    );
 
     ScrollTrigger.refresh();
-    return () => ctx.revert();
+    return () => mm.revert();
   }, [selectedCategory, timelineItems.length]);
 
   const getStatusBadge = (status: TimelineDrop['status']) => {
@@ -175,19 +190,19 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
     <section
       id="timeline"
       ref={sectionRef}
-      className="relative w-full py-24 sm:py-32 bg-[#0b0d1a] overflow-hidden"
+      className="relative w-full py-16 sm:py-24 lg:py-32 bg-[#0b0d1a] overflow-x-clip"
     >
       {/* Background Neon Web Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(34,211,238,0.08)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] max-w-full h-[600px] bg-[radial-gradient(circle,rgba(34,211,238,0.08)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}
-        <div className="text-center mb-16 sm:mb-24">
+        <div className="text-center mb-12 sm:mb-20">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#171a30] border border-[#252846] text-cyan-400 text-xs font-mono font-semibold uppercase tracking-widest mb-3">
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5 shrink-0" />
             <span>Scroll-Linked Radar Line</span>
           </div>
-          <h2 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide">
+          <h2 className="font-bebas text-[clamp(2.25rem,6vw,4.5rem)] leading-none text-white tracking-wide text-balance">
             {selectedCategory === 'Coming Soon' ? (
               <>
                 COMING SOON <span className="text-[#22d3ee]">RADAR (&gt;30 DAYS)</span>
@@ -204,7 +219,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
               : 'Watch the central trajectory line calibrate as you scroll down. Alternating daily drops, confirmed platforms, and early pre-loads.'}
           </p>
           {onSelectCategory && (
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-1.5">
+            <div className="mt-5 flex flex-nowrap sm:flex-wrap items-center justify-start sm:justify-center gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
               {['All', 'Movies', 'Games', 'Books', 'Coming Soon'].map((cat) => {
                 const active = selectedCategory.toLowerCase() === cat.toLowerCase();
                 return (
@@ -213,7 +228,7 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     type="button"
                     aria-pressed={active}
                     onClick={() => onSelectCategory(cat)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+                    className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
                       active
                         ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/60 font-semibold'
                         : 'bg-[#121528] text-slate-400 hover:text-white border border-[#252846]'
@@ -288,19 +303,19 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
                     >
                       {/* Top Badges */}
                       <div
-                        className={`flex items-center gap-2 mb-3 ${
+                        className={`flex flex-wrap items-center gap-2 mb-3 ${
                           isLeft ? 'md:justify-end' : 'md:justify-start'
                         }`}
                       >
                         <span className="text-xs font-mono font-semibold text-slate-400 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                          <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                           {drop.day} · {drop.dateStr}
                         </span>
                         {getStatusBadge(drop.status)}
                       </div>
 
                       {/* Drop Title */}
-                      <h3 className="font-bebas text-2xl sm:text-3xl text-white group-hover:text-cyan-300 transition-colors tracking-wide mb-2">
+                      <h3 className="font-bebas text-2xl sm:text-3xl text-white group-hover:text-cyan-300 transition-colors tracking-wide mb-2 break-words">
                         {drop.title}
                       </h3>
 
@@ -323,11 +338,11 @@ export const TimelineSection: React.FC<TimelineSectionProps> = ({
 
                       {/* Footer & Actions */}
                       <div
-                        className={`flex items-center gap-3 pt-3 border-t border-[#252846]/60 ${
+                        className={`flex flex-wrap items-center gap-2 sm:gap-3 pt-3 border-t border-[#252846]/60 ${
                           isLeft ? 'md:justify-end' : 'md:justify-start'
                         }`}
                       >
-                        <span className="text-xs font-mono text-cyan-400/90 font-medium bg-[#171a30] px-2.5 py-1 rounded-md border border-[#2b3052]">
+                        <span className="text-xs font-mono text-cyan-400/90 font-medium bg-[#171a30] px-2.5 py-1 rounded-md border border-[#2b3052] max-w-full truncate">
                           {drop.platform}
                         </span>
 
